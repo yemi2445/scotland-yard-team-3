@@ -1,0 +1,96 @@
+.page {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: radial-gradient(1200px 800px at 75% 20%, rgba(86, 150, 54, 0.75), rgba(38, 73, 38, 0.55) 55%, rgba(71, 50, 34, 0.55) 100%), radial-gradient(900px 700px at 15% 25%, rgba(33, 16, 2, 0.48), rgba(55, 36, 8, 0.918) 60%, rgba(40, 40, 40, 0.25) 100%), linear-gradient(135deg, rgba(70, 60, 45, 0.55), rgba(95, 105, 95, 0.55));
+}
+
+.shapes {
+    position: absolute;
+    inset: -20%;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(1100px 1100px at 82% 14%, rgba(255, 255, 255, 0.22), transparent 60%), radial-gradient(900px 900px at 14% 30%, rgba(255, 255, 255, 0.14), transparent 62%), linear-gradient(115deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.1) 28%, rgba(255, 255, 255, 0) 55%), radial-gradient(1200px 900px at 78% 92%, rgba(0, 0, 0, 0.18), transparent 72%);
+    mix-blend-mode: soft-light;
+    opacity: 0.9;
+    filter: blur(0.2px);
+}
+
+.content {
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 80px 40px;
+    background: rgba(20, 20, 20, 0.2);
+    backdrop-filter: blur(6px);
+    border-radius: 12px;
+    color: #fff;
+}
+
+.pageTitle {
+    font-family: "Pacifico", cursive;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    color: #ebc3c3;
+    padding-left: 10px;
+    text-align: left;
+    text-shadow:
+        -1px -1px 0 rgba(255, 255, 255, 0.25),
+        0 6px 14px rgba(0, 0, 0, 0.35),
+        0 18px 40px rgba(0, 0, 0, 0.25),
+        0 0 24px rgba(120, 180, 140, 0.35);
+    margin-bottom: 40px;
+    margin-top: 0px;
+}
+
+.heading {
+    font-size: 28px;
+    margin-bottom: 16px;
+    padding-left: 10px;
+    color: rgb(246, 235, 235);
+}
+
+.subheading {
+    font-size: 20px;
+    margin-bottom: 8px;
+    padding-left: 10px;
+    color: rgb(246, 235, 235);
+}
+
+.paragraph,
+.list li {
+    font-family: Inconsolata, monospace;
+    font-size: 18px;
+    padding-left: 10px;
+    line-height: 1.2;
+    color: rgb(246, 235, 235);
+}
+
+.menuButton {
+    margin-top: 30px;
+    margin-bottom: 20px;
+    margin-left: 10px;
+    padding: 14px 36px;
+    font-family: Inconsolata, monospace;
+    font-size: 22px;
+    font-style: italic;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    background: rgba(235, 235, 235, 0.9);
+    color: rgba(0, 0, 0, 0.85);
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    transition:
+        transform 120ms ease,
+        filter 120ms ease;
+}
+
+.menuButton:hover {
+    filter: brightness(0.98);
+    transform: translateY(-1px);
+}
+
+.menuButton:active {
+    transform: translateY(0px);
+}

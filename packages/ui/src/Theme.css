@@ -1,0 +1,23 @@
+:root {
+    /* colours */
+    --colour-primary: #3b82f6;
+    --colour-secondary: #64748b;
+    --colour-background: #f8fafc;
+    --colour-text: #1e293b;
+    --colour-button-text: #ffffff;
+    --colour-surface: #ffffff;
+
+    /* Spacing */
+    --spacing-s: 8px;
+    --spacing-m: 16px;
+    --spacing-l: 24px;
+    --spacing-xl: 32px;
+
+    /* Border Radius */
+    --border-radius: 8px;
+
+    /* Typography */
+    --typography-title-font-size: 32px;
+    --typography-title-font-weight: bold;
+    --typography-body-font-size: 16px;
+}

@@ -1,0 +1,94 @@
+.page {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    font-family: monospace;
+}
+
+.toolbar {
+    padding: 10px;
+    background: #f0f0f0;
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.toolBtn {
+    padding: 5px 15px;
+    cursor: pointer;
+}
+
+.validationMsg {
+    font-weight: bold;
+}
+
+.nodePanel {
+    margin-left: auto;
+    background: #fff;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.nodePanelTitle {
+    font-size: 13px;
+}
+
+.transportRow {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.transportCheckbox {
+    cursor: pointer;
+}
+
+.linkBtn {
+    padding: 2px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.cancelBtn {
+    font-size: 11px;
+    cursor: pointer;
+    padding: 2px 6px;
+}
+
+.hint {
+    margin-left: auto;
+    font-size: 12px;
+    color: #888;
+}
+
+.mapArea {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    background-color: #ddd;
+}
+
+.mapImage {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.svgOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}

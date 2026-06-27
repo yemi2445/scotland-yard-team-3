@@ -1,0 +1,59 @@
+@import url("https://fonts.googleapis.com/css2?family=Imperial+Script&display=swap");
+
+.page {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.8s ease;
+}
+
+.fade-out {
+    opacity: 0;
+}
+
+.page::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 0;
+}
+
+.overlay-text {
+    position: relative;
+    z-index: 1;
+    font-family: "Imperial Script", cursive;
+    font-size: clamp(3rem, 6.5vw, 5.5rem);
+    color: #ffffff;
+    text-align: center;
+    padding: 1rem 2rem;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.continue-text {
+    position: absolute;
+    bottom: 8vh;
+    z-index: 1;
+    font-family: "Imperial Script", cursive;
+    font-size: clamp(1.3rem, 2.8vw, 2.1rem);
+    color: #f2e6d6;
+    opacity: 0.9;
+    letter-spacing: 0.08em;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+    50% {
+        opacity: 1;
+    }
+}

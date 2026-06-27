@@ -1,0 +1,30 @@
+.indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(20, 20, 20, 0.9);
+    padding: 0.8rem 1.5rem;
+    border-radius: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    font-family: sans-serif;
+    font-weight: bold;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    max-width: min(38rem, 70vw);
+    color: white;
+}
+
+.label {
+    color: #ccc;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.name {
+    font-size: 1.2rem;
+    color: #fff;
+    line-height: 1.25;
+}

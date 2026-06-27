@@ -1,0 +1,27 @@
+{
+    "name": "scotland-yard-team-3",
+    "private": true,
+    "scripts": {
+        "build": "turbo run build",
+        "dev": "turbo run dev",
+        "lint": "turbo run lint",
+        "format": "prettier --write \"**/*.{ts,tsx,md,json,js,jsx,css}\" --ignore-path .gitignore"
+    },
+    "devDependencies": {
+        "prettier": "latest",
+        "turbo": "latest",
+        "typescript": "latest"
+    },
+    "packageManager": "npm@10.0.0",
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "overrides": {
+        "react": "19.1.0",
+        "react-dom": "19.1.0"
+    },
+    "dependencies": {
+        "expo-linear-gradient": "^15.0.8"
+    }
+}

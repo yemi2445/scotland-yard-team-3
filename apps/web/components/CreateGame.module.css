@@ -1,0 +1,199 @@
+.pinRow {
+    margin-top: 34px;
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+    font-family: Inconsolata, monospace;
+    color: rgba(255, 255, 255, 0.92);
+    letter-spacing: 0.08em;
+}
+
+.pinLabel {
+    font-size: clamp(2.2rem, 4.8vw, 3.4rem);
+}
+
+.pinValue {
+    font-size: clamp(2.2rem, 4.8vw, 3.4rem);
+}
+
+.players {
+    margin-top: 52px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.88);
+    font-family: Inconsolata, monospace;
+}
+
+.playersTitle {
+    font-size: 1.1rem;
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+}
+
+.playersList {
+    display: flex;
+    justify-content: center;
+    gap: 44px;
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+}
+
+.player {
+    opacity: 0.95;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.playerDot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+}
+
+.start {
+    margin-top: 64px;
+    width: min(220px, 70vw);
+    height: 52px;
+    font-size: 18px;
+}
+
+.controlsRow {
+    margin-top: 28px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 40px;
+}
+
+.roundsRow {
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    font-family: Inconsolata, monospace;
+    color: rgba(255, 255, 255, 0.92);
+    letter-spacing: 0.08em;
+}
+
+.roundsLabel {
+    font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+}
+
+.roundsChips {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 12px;
+}
+
+.roundsChip {
+    min-width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(20, 20, 20, 0.4);
+    color: #fff;
+    font-family: Inconsolata, monospace;
+    font-size: clamp(1rem, 2vw, 1.3rem);
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 120ms, color 120ms, border-color 120ms;
+}
+
+.roundsChipSelected {
+    background: rgba(255, 255, 255, 0.92);
+    color: #000;
+    border-color: rgba(255, 255, 255, 0.92);
+}
+
+.mapRow {
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    font-family: Inconsolata, monospace;
+    color: rgba(255, 255, 255, 0.92);
+    letter-spacing: 0.08em;
+}
+
+.mapLabel {
+    font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+}
+
+.mapChips {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 12px;
+}
+
+.mapChip {
+    min-width: 104px;
+    height: 44px;
+    padding: 0 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(20, 20, 20, 0.4);
+    color: #fff;
+    font-family: Inconsolata, monospace;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 120ms, color 120ms, border-color 120ms;
+    white-space: nowrap;
+}
+
+.mapChipSelected {
+    background: rgba(255, 255, 255, 0.92);
+    color: #000;
+    border-color: rgba(255, 255, 255, 0.92);
+}
+
+@media (max-width: 900px) {
+    .controlsRow {
+        gap: 26px;
+    }
+}
+
+@media (max-width: 720px) {
+    .controlsRow {
+        flex-direction: column;
+        align-items: center;
+        gap: 22px;
+    }
+}
+
+.spectatorRow {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+}
+
+.spectatorLabel {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: Inconsolata, monospace;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    letter-spacing: 0.06em;
+    color: #fff;
+    cursor: pointer;
+}
+
+.spectatorLabel input {
+    width: 20px;
+    height: 20px;
+    accent-color: rgba(255, 255, 255, 0.92);
+    cursor: pointer;
+}

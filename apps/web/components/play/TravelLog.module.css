@@ -1,0 +1,81 @@
+.container {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    font-family: monospace;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    display: flex;
+    flex-direction: column;
+}
+
+.title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 0.8rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 0.5rem;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: 24px;
+    row-gap: 4px;
+    grid-auto-flow: column;
+}
+
+.logEntry {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    padding: 2px 0;
+    width: 90px;
+}
+
+.turnNumber {
+    color: #aaa;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+}
+
+.revealTurn {
+    border: 2px solid #ff0055;
+    border-radius: 50%;
+    color: white;
+    font-weight: bold;
+}
+
+.transport {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: capitalize;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.transportIcon {
+    font-size: 1.2rem;
+}
+
+.filled {
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.position {
+    width: 40px;
+    text-align: right;
+    color: #ffd700;
+    font-weight: bold;
+}
