@@ -24,14 +24,14 @@ const makeRequest = async <T>(endpoint: string, method = "GET", body?: any): Pro
 
 export const apiClient = {
     getMaps: () => makeRequest("/maps"),
-    getMap: (mapId) => makeRequest(`/maps/${mapId}`),
+    getMap: (mapId: any) => makeRequest(`/maps/${mapId}`),
     getGames: () => makeRequest("/games"),
-    getGame: (gameId) => makeRequest(`/games/${gameId}`),
-    createGame: (name, mapId, gameLength) => makeRequest("/games", "POST", { name, mapId, gameLength }),
-    joinGame: (gameId, playerName) => makeRequest(`/games/${gameId}/players`, "POST", { playerName }),
-    startGame: (gameId, playerId) => makeRequest(`/games/${gameId}/start/${playerId}`, "PATCH"),
-    getPlayer: (playerId) => makeRequest(`/players/${playerId}`),
-    getMoves: (playerId) => makeRequest(`/players/${playerId}/moves`),
-    makeMove: (playerId, gameId, ticket, destination) => makeRequest(`/players/${playerId}/moves`, "POST", { gameId, ticket, destination }),
-    surrender: (playerId, gameId) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameId }),
+    getGame: (gameId: any) => makeRequest(`/games/${gameId}`),
+    createGame: (name: any, mapId: any, gameLength: any) => makeRequest("/games", "POST", { name, mapId, gameLength }),
+    joinGame: (gameId: any, playerName: any) => makeRequest(`/games/${gameId}/players`, "POST", { playerName }),
+    startGame: (gameId: any, playerId: any) => makeRequest(`/games/${gameId}/start/${playerId}`, "PATCH"),
+    getPlayer: (playerId: any) => makeRequest(`/players/${playerId}`),
+    getMoves: (playerId: any) => makeRequest(`/players/${playerId}/moves`),
+    makeMove: (playerId: any, gameId: any, ticket: any, destination: any) => makeRequest(`/players/${playerId}/moves`, "POST", { gameId, ticket, destination }),
+    surrender: (playerId: any, gameId: any) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameId }),
 }

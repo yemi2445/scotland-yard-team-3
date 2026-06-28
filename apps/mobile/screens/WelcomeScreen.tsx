@@ -25,7 +25,7 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
 
     const handlePlay = async () => {
         try {
-            const gamePin = formatGamePin(pin);
+            const gamePin = formatGamePin(pin).replace("-","");
 
             // Static v1: colour is selected locally (not sent yet)
             const response = await apiClient.joinGame(gamePin, name );

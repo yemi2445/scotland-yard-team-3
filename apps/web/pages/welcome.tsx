@@ -22,10 +22,10 @@ export default function Welcome() {
         if (!canJoin) return;
 
         try {
-            const gamePin = formatGamePin(pin);
+            const gamePin = formatGamePin(pin).replace("-","");
 
             // Backend v1: colour is now sent in the join payload
-            const response = await apiClient.joinGame(gamePin, name, colour);
+            const response = await apiClient.joinGame(gamePin, name);
             if (!response.playerId) {
                 alert("Failed to join game — no player ID returned.");
                 return;
@@ -82,7 +82,7 @@ export default function Welcome() {
             }
 
             // Backend v1: colour is now sent in the create payload
-            const { game, playerId } = await apiClient.createGame(name, colour);
+            const { game, playerId } = await apiClient.createGame(name, 1, "short");
 
             setPlayerId(playerId);
             setGame(game);
