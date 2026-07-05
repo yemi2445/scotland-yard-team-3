@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Pressable, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { theme } from "@packages/ui/src/theme";
-import { Button } from "@packages/ui/src/Button";
 import { NavigationProps } from "../App";
 import { Player, TransportType, TravelLogEntry } from "@packages/types";
 import { TransportBar } from "../components/TransportBar";
@@ -19,12 +18,20 @@ export default function PlayScreen({ navigation }: NavigationProps) {
     const [shownWinMessage, setShownWinMessage] = useState(false);
     const [selectedTransport, setSelectedTransport] = useState<TransportType | null>(null);
     const [selectedSecondaryTransport, setSelectedSecondaryTransport] = useState<TransportType | null>(null);
-
+     
+    
     useEffect(() => {
-        if (!game || !playerId) {
-            navigation.navigate("Welcome");
+        if (gameOver && game?.winMessage && !shownWinMessage) {
+            if (!currentPlayer) return;
+            setShownWinMessage(true);
+            alert(game.winMessage);
+            alert(game.winMessage);
+            // Go back to lobby for a rematch
+            navigation.navigate("CreateGame");
+        } else if (!gameOver && shownWinMessage) {
+            setShownWinMessage(false);
         }
-    }, [game, playerId, navigation]);
+    }, [gameOver, game?.winMessage, shownWinMessage, currentPlayer]);
 
     const currentPlayer = useMemo(() => {
         if (!game) return null;
@@ -67,17 +74,40 @@ export default function PlayScreen({ navigation }: NavigationProps) {
             setSelectedTransport((prev) => (prev === t ? null : t));
         }
     }, []);
+    
+    const handleSurrender = useCallback(
+        async () => {
+            if (!game || !playerId) return;
+            try {
+                await apiClient.surrender(playerId, game.pin);
+            } catch (err) {
+                const message = err instanceof Error ? err.message : String(err);
+                alert(`Surrender failed: ${message}`);
+            }
+        },
+        [playerId, game]
+    );
+    
+    const handleStart = async() => {
+        if (!game || !playerId) return;
+        try {
+            await apiClient.startGame(game.pin, playerId);  
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            alert(`Start game failed: ${message}`);
+        }
+    };
 
     const handleMove = useCallback(
         async (destination: number, transport: TransportType) => {
             if (!game || !playerId) return;
             try {
-                await apiClient.makeMove(game.pin, playerId, {
+                await apiClient.makeMove(
                     playerId,
+                    game.pin,
                     transport,
                     destination,
-                    ...(selectedSecondaryTransport ? { secondaryTransport: selectedSecondaryTransport } : {}),
-                });
+                );
                 setSelectedTransport(null);
                 setSelectedSecondaryTransport(null);
             } catch (err) {
@@ -88,19 +118,6 @@ export default function PlayScreen({ navigation }: NavigationProps) {
         [game, playerId, selectedSecondaryTransport]
     );
 
-    const handleSurrender = useCallback(
-        async () => {
-            if (!game || !playerId) return;
-            try {
-                await apiClient.surrender(playerId, game.pin);
-            } catch (err) {
-                const message = err instanceof Error ? err.message : String(err);
-                alert(`Surrender failed: ${message}`);
-            }
-           },
-            [playerId, game]
-        );
-        
     if (!game || !playerId || !currentPlayer || !currentTurnPlayer) return null;
 
     const showTransportBar = !(currentTurnPlayer.isLecturer && !currentPlayer.isLecturer);
@@ -139,7 +156,9 @@ export default function PlayScreen({ navigation }: NavigationProps) {
 
                 {currentPlayer.isLecturer && isMyTurn && (
                     <View style={styles.surrenderContainer}>
-                        <Button onPress={handleSurrender} label="Surrender" />
+                        <Pressable onPress={handleSurrender} style={styles.surrenderButton}>
+                            <Text style={styles.surrenderText}>Surrender</Text>
+                        </Pressable>
                     </View>
                 )}
             </View>
@@ -165,4 +184,17 @@ const styles = StyleSheet.create({
         bottom: 80,
         right: 20,
     },
+
+    surrenderButton: {
+        backgroundColor: "rgba(220,50,50,0.9)",
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 10,
+    },
+    surrenderText: {
+        color: "#fff",
+        fontWeight: "800",
+        fontSize: 14,
+    },
+
 });

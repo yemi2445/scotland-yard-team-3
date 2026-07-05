@@ -51,7 +51,7 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
         const moves = getValidMoves(mapDefinition.nodes, currentPlayerObj.position, currentPlayerObj.tickets, players);
         console.log("Valid moves:", moves);
         if (!moves || moves.size === 0) {
-            apiClient.stuckGame(gamePin, currentPlayerId);
+            console.log("[InteractiveMap] No valid moves found");
         }
         return moves;
     }, [isMyTurn, currentPlayerObj, players, gamePin, currentPlayerId]);

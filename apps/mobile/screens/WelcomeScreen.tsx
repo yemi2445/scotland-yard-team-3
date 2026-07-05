@@ -79,27 +79,55 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
         }
     };
 
-    const handleCreateGame = async () => {
-        try {
-            if (name.trim().length === 0) {
-                alert("Please enter your name before creating a game.");
-                return;
-            }
-
-            // Static v1: colour is selected locally (not sent yet)
-            const { game, playerId } = await apiClient.createGame(name, 1, "short");
-
-            console.log("Created game:", game);
-            console.log("Selected colour:", colour);
-
-            setPlayerId(playerId);
-            setGame(game);
-            navigation.navigate("CreateGame");
-        } catch (e) {
-            console.log(e);
-            alert("Error connecting to backend");
+   const handleCreateGame = async () => {
+    try {
+        if (name.trim().length === 0) {
+            alert("Please enter your name before creating a game.");
+            return;
         }
-    };
+
+        const createResponse: any = await apiClient.createGame(name, 1, "short");
+        const gameId = createResponse.gameId;
+
+        const joinResponse: any = await apiClient.joinGame(gameId, name);
+        const playerId = String(joinResponse.playerId);
+
+        const rawGame: any = await apiClient.getGame(gameId);
+        const mapData: any = await apiClient.getMap(rawGame.mapId);
+        const mapName = mapData?.mapName ?? "Mini Map";
+
+         const game = {
+            pin: String(rawGame.gameId),
+            mapId: rawGame.mapId,
+            mapName: mapName,
+            status: rawGame.state === "Open" ? "lobby" :
+                rawGame.state === "Fugitive" || rawGame.state === "Detective" ? "active" : "finished",
+            currentTurn: rawGame.currentTurn ?? null,
+            currentRound: rawGame.round ?? 0,
+            totalRounds: rawGame.length ?? 0,
+            winMessage: rawGame.winner !== "None" ? `${rawGame.winner} Wins!` : null,
+            travelLog: [],
+            players: (rawGame.players ?? []).map((p: any, i: number) => ({
+                id: String(p.playerId),
+                name: p.playerName,
+                colour: p.colour?.toLowerCase() === "Clear",
+                isLecturer: p.colour?.toLowerCase() === "Clear",
+                isHOST: i === 0,
+                postion: typeof p.position === "number" ? p.position : null,
+                tickets: { yellow: 0, green: 0, red: 0, black: 0, x2: 0},
+                isSpectator: false,
+            })),
+        };
+        setPlayerId(playerId);
+        setGame(game);
+        navigation.navigate("CreateGame");
+    } catch (e) {
+        console.log(e);
+        alert("Failed to create game. Please try again.");
+    }
+         
+        
+};
 
     const onJoin = () => {
         if (!canJoin) return;

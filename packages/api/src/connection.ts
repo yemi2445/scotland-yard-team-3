@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3002/api";
+const API_URL = "http://trinity-developments.co.uk";
 
 const makeRequest = async <T>(endpoint: string, method = "GET", body?: any): Promise<T> => {
     const res = await fetch(`${API_URL}${endpoint}`, {

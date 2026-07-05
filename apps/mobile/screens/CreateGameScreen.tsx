@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo,  } from "react";
 import { View, Text, StyleSheet, Pressable, Platform, KeyboardAvoidingView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -6,13 +6,13 @@ import { StatusBar } from "expo-status-bar";
 import { useFonts, Pacifico_400Regular } from "@expo-google-fonts/pacifico";
 import type { NavigationProps } from "../App";
 import { useGameState } from "@packages/providers";
-import { ROUND_OPTIONS, MAX_ROUNDS, getColourHex, DEFAULT_MAP_ID, AVAILABLE_MAPS } from "@packages/utils";
 import { apiClient } from "@packages/api";
+import { getColourHex, } from "@packages/utils";
+
+
 
 export default function CreateGameScreen({ navigation }: NavigationProps) {
-    const { game, playerId, currentPlayer } = useGameState();
-    const [rounds, setRounds] = useState(MAX_ROUNDS);
-    const [mapId, setMapId] = useState(DEFAULT_MAP_ID);
+    const { game, playerId, currentPlayer, setGame, setPlayerId } = useGameState();
 
     const players = useMemo(() => {
         if (!game) return [];
@@ -28,57 +28,37 @@ export default function CreateGameScreen({ navigation }: NavigationProps) {
             navigation.navigate("Welcome");
             return;
         }
-
         if (game.status === "active") {
             navigation.navigate("Play");
         }
     }, [game, navigation]);
 
-    useEffect(() => {
-        if (!game) return;
-        setRounds(game.totalRounds || MAX_ROUNDS);
-        setMapId(game.mapId || DEFAULT_MAP_ID);
-    }, [game]);
+    const rounds = game?.totalRounds || 0;
+    const selectedMapName = game?.mapName ?? "Unknown Map";
 
-    const selectedMapName = useMemo(() => {
-        return AVAILABLE_MAPS.find((m) => m.id === mapId)?.name ?? "Unknown map";
-    }, [mapId]);
-
-    const updateRounds = (nextRounds: number) => {
-        if (!game || !playerId || !currentPlayer?.isHost) return;
-
-        setRounds(nextRounds);
-        apiClient.updateGame(game.pin, playerId, { totalRounds: nextRounds }).catch((err) => {
-            const message = err instanceof Error ? err.message : String(err);
-            alert(`Failed to update rounds: ${message}`);
-            setRounds(game.totalRounds || MAX_ROUNDS);
-        });
-    };
-
-    const updateMap = (nextMapId: typeof mapId) => {
-        if (!game || !playerId || !currentPlayer?.isHost) return;
-
-        setMapId(nextMapId);
-        apiClient.updateGame(game.pin, playerId, { mapId: nextMapId }).catch((err) => {
-            const message = err instanceof Error ? err.message : String(err);
-            alert(`Failed to update map: ${message}`);
-            setMapId(game.mapId || DEFAULT_MAP_ID);
-        });
-    };
-
-    const createGame = () => {
+    const handleStart = async () => {
         if (!game || !playerId) return;
-        apiClient.startGame(game.pin, playerId, rounds, mapId).catch((err) => {
+        console.log("Starting game with pin:", game.pin, "playerId:", playerId);
+        try {
+            const response = await apiClient.startGame(game.pin, playerId);
+            console.log("Start response:", response);
+            navigation.navigate("Play");
+        } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
+            console.log("Start error:", message);
             alert(`Failed to start game: ${message}`);
-        });
+        }
+    };
+    
+    const handleLeave = () => {
+        setGame(null);
+        setPlayerId(null);
+        navigation.navigate("Welcome"); // go Home 
     }
-
     if (!fontsLoaded) return null;
 
-    return (
+return (
         <LinearGradient colors={["#6f8c59", "#2f4f2f", "#3f3f3f"]} style={styles.background}>
-            {/* Background shapes */}
             <View pointerEvents="none" style={styles.shapes}>
                 <View style={[styles.shape, styles.shapeTopRight]} />
                 <View style={[styles.shape, styles.shapeLeft]} />
@@ -90,59 +70,36 @@ export default function CreateGameScreen({ navigation }: NavigationProps) {
                 <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
                     <StatusBar style="light" translucent backgroundColor="transparent" />
 
-                <View style={styles.layout}>
-                    {/* Title */}
-                    <View style={styles.top}>
-                        <View style={styles.titleWrap}>
-                            <Text style={styles.titleGlow}>The Leeds Files - Manhunt</Text>
-                            <Text style={styles.titleShadow}>The Leeds Files - Manhunt</Text>
-                            <Text style={styles.title}>The Leeds Files - Manhunt</Text>
-                        </View>
-
-                    </View>
-
-                    {/* Main content */}
-                    <View style={styles.middle}>
-                        <View style={styles.pinRow}>
-                            <Text style={styles.pinLabel}>Pin:</Text>
-                            <Text style={styles.pinValue}>{game?.pin}</Text>
-                        </View>
-
-                        <View style={styles.players}>
-                            <Text style={styles.playersTitle}>Current players:</Text>
-                            <View style={styles.playersList}>
-                                {players.map((p) => (
-                                    <View key={p.name} style={styles.playerItem}>
-                                        <View style={[styles.playerDot, { backgroundColor: p.colour }]} />
-                                        <Text style={styles.player}>{p.name}</Text>
-                                    </View>
-                                ))}
+                    <View style={styles.layout}>
+                        <View style={styles.top}>
+                            <View style={styles.titleWrap}>
+                                <Text style={styles.titleGlow}>The Leeds Files - Manhunt</Text>
+                                <Text style={styles.titleShadow}>The Leeds Files - Manhunt</Text>
+                                <Text style={styles.title}>The Leeds Files - Manhunt</Text>
                             </View>
                         </View>
 
-                        <View style={styles.controlsRow}>
-                            <View style={styles.mapRow}>
-                                <Text style={styles.mapLabel}>Map:</Text>
-                                {currentPlayer?.isHost ? (
-                                    <View style={styles.mapChips}>
-                                        {AVAILABLE_MAPS.map((map) => (
-                                            <Pressable
-                                                key={map.id}
-                                                onPress={() => updateMap(map.id)}
-                                                style={[styles.mapChip, mapId === map.id && styles.mapChipSelected]}
-                                            >
-                                                <Text
-                                                    numberOfLines={1}
-                                                    adjustsFontSizeToFit
-                                                    minimumFontScale={0.75}
-                                                    style={[styles.mapChipText, mapId === map.id && styles.mapChipTextSelected]}
-                                                >
-                                                    {map.name}
-                                                </Text>
-                                            </Pressable>
-                                        ))}
-                                    </View>
-                                ) : (
+                        <View style={styles.middle}>
+                            <View style={styles.pinRow}>
+                                <Text style={styles.pinLabel}>Pin:</Text>
+                                <Text style={styles.pinValue}>{game?.pin}</Text>
+                            </View>
+
+                            <View style={styles.players}>
+                                <Text style={styles.playersTitle}>Current players:</Text>
+                                <View style={styles.playersList}>
+                                    {players.map((p) => (
+                                        <View key={p.name} style={styles.playerItem}>
+                                            <View style={[styles.playerDot, { backgroundColor: p.colour }]} />
+                                            <Text style={styles.player}>{p.name}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+
+                            <View style={styles.controlsRow}>
+                                <View style={styles.mapRow}>
+                                    <Text style={styles.mapLabel}>Map:</Text>
                                     <View style={styles.mapChips}>
                                         <View style={[styles.mapChip, styles.mapChipSelected]}>
                                             <Text
@@ -155,45 +112,43 @@ export default function CreateGameScreen({ navigation }: NavigationProps) {
                                             </Text>
                                         </View>
                                     </View>
-                                )}
-                            </View>
+                                </View>
 
-                            <View style={styles.roundsRow}>
-                                <Text style={styles.roundsLabel}>Rounds:</Text>
-                                {currentPlayer?.isHost ? (
-                                    <View style={styles.roundsChips}>
-                                        {ROUND_OPTIONS.map((r) => (
-                                            <Pressable
-                                                key={r}
-                                                onPress={() => updateRounds(r)}
-                                                style={[styles.roundsChip, rounds === r && styles.roundsChipSelected]}
-                                            >
-                                                <Text style={[styles.roundsChipText, rounds === r && styles.roundsChipTextSelected]}>
-                                                    {r}
-                                                </Text>
-                                            </Pressable>
-                                        ))}
-                                    </View>
-                                ) : (
+                                <View style={styles.roundsRow}>
+                                    <Text style={styles.roundsLabel}>Rounds:</Text>
                                     <View style={styles.roundsChips}>
                                         <View style={[styles.roundsChip, styles.roundsChipSelected]}>
-                                            <Text style={[styles.roundsChipText, styles.roundsChipTextSelected]}>{rounds}</Text>
+                                            <Text style={[styles.roundsChipText, styles.roundsChipTextSelected]}>
+                                                {rounds}
+                                            </Text>
                                         </View>
                                     </View>
-                                )}
+                                </View>
+                            </View>
+
+                            <View style={styles.footer}>
+                                <Pressable
+                                    onPress={handleStart}
+                                    style={({ pressed }) => [
+                                        styles.joinButton,
+                                        pressed && styles.pressedDown,
+                                    ]}
+                                >
+                                    <Text style={styles.joinText}>Start Game</Text>
+                                </Pressable>
+
+                                <Pressable
+                                    onPress={handleLeave}
+                                    style={({ pressed }) => [
+                                        styles.leaveButton,
+                                        pressed && styles.pressedDown,
+                                ]}
+                                >
+                                    <Text style={styles.leaveText}>Leave Lobby</Text>
+                                </Pressable>
                             </View>
                         </View>
-
                     </View>
-
-                    {currentPlayer?.isHost && (
-                        <View style={styles.footer}>
-                            <Pressable onPress={createGame} style={({ pressed }) => [styles.joinButton, pressed && styles.pressedDown]}>
-                                <Text style={styles.joinText}>Start Game</Text>
-                            </Pressable>
-                        </View>
-                    )}
-                </View>
                 </KeyboardAvoidingView>
             </SafeAreaView>
         </LinearGradient>
@@ -400,6 +355,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.18,
         shadowRadius: 10,
     },
+    
 
     joinText: {
         fontSize: 13,
@@ -422,6 +378,25 @@ const styles = StyleSheet.create({
         color: "#000",
     },
 
+    leaveButton: {
+        width: "48%",
+        minWidth: 160,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: "rgba(220,50,50,0.8)",
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: 8,
+        borderWidth: 2,
+        borderColor: "#000",
+    },
+
+    leaveText: {
+        fontSize: 13,
+        fontWeight: "800",
+        color: "#fff",  
+    },
+
     bottom: {
         alignItems: "center",
         paddingBottom: 10,
@@ -442,6 +417,7 @@ const styles = StyleSheet.create({
     controlsRow: {
         marginTop: 14,
         flexDirection: "row",
+        flexWrap: "wrap",
         alignItems: "flex-start",
         justifyContent: "center",
         gap: 14,

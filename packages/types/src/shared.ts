@@ -3,10 +3,10 @@ import { MapId } from "@packages/utils";
 export interface Game {
     pin: string;
     players: Player[];
-    currentTurn?: string; // player ID of the current turn
-    currentRound: number;
+    currentTurn: number;
     totalRounds: number;
     mapId: MapId;
+    mapName?: string;
     status: "waiting" | "active" | "finished";
     winMessage?: string;
     travelLog: TravelLogEntry[];

@@ -44,10 +44,7 @@ function MobileLeaveHandler({ children }: { children: React.ReactNode }) {
         const subscription = AppState.addEventListener("change", (nextState: AppStateStatus) => {
             const wasActiveOrInactive = appState.current === "active" || appState.current === "inactive";
             if (wasActiveOrInactive && nextState === "background") {
-                const { pin, playerId } = gameDataRef.current;
-                if (pin && playerId) {
-                    apiClient.leaveGame(pin, playerId)
-                }
+                const { pin, playerId } = gameDataRef.current;    
             }
             appState.current = nextState;
         });
@@ -65,7 +62,7 @@ function MobileLeaveHandler({ children }: { children: React.ReactNode }) {
             const { pin, playerId } = gameDataRef.current;
             if (!pin || !playerId) return;
             apiClient.leaveGame(pin, playerId);
-        };
+        }
 
         window.addEventListener("pagehide", handleLeave);
         window.addEventListener("beforeunload", handleLeave);

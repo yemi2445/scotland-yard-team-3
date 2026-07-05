@@ -23,16 +23,46 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
         const poll = async () => {
             try {
-                const response = await apiClient.getGame(game.pin);
+                const rawGame: any = await apiClient.getGame(game.pin);
 
-                if (!cancelled && response.success) {
+                if (!cancelled) {
+                    const mapped = {
+                        pin: String(rawGame.gameId),
+                        mapId: rawGame.mapId,
+                        status: rawGame.state === "Open" ? "Waiting" :
+                                rawGame.state === "Fugitive" || rawGame.state === "Detective" ? "active" : "finished",
+                        currentTurn: rawGame.state === "Fugitive" 
+                           ? (rawGame.players ?? []).find((p: any) => p.colour?.toLowerCase() === "clear")?.playerId?.toString() ?? null
+                           : null,
+                        currentRound: rawGame.round ?? 0,
+                        totalRounds: rawGame.length ?? 0,
+                        winMessage: rawGame.winner !== "None" ? `${rawGame.winner} wins!` : null,
+                        travelLog: [],
+                        players: (rawGame.players ?? []).map((p: any, i: number) => ({
+                            id: String(p.playerId),
+                            name: p.playerName,
+                            colour: p.colour?.toLowerCase() ?? "clear",
+                            isLecturer: p.colour?.toLowerCase() === "clear",
+                            isHost: i === 0,
+                            position: typeof p.location === "number" ? p.location : 0,
+                            tickets: { yellow: 0, green: 0, red: 0, black: 0, x2: 0 },
+                            isSpectator: false,
+         
+               })),      
+                    };
                     setGame((prevGame) => {
-                        if (JSON.stringify(prevGame) !== JSON.stringify(response.game)) {
-                            return response.game;
+                        // Keep mapName from previous state since server doesdnt return it
+                        const mappedWithName = {
+                            ...mapped,
+                            mapName: prevGame?.mapName ?? "Mini Map",
+                        };
+                        if (JSON.stringify(prevGame) != JSON.stringify(mappedWithName)) {
+                            return mappedWithName;
                         }
-                        return prevGame;
+                        return prevGame;    
                     });
                 }
+
             } catch (err: any) {
                 const msg = String(err?.message ?? err);
 
