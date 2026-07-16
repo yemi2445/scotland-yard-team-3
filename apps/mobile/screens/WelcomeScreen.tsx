@@ -86,7 +86,7 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
             return;
         }
 
-        const createResponse: any = await apiClient.createGame(name, 1, "short");
+        const createResponse: any = await apiClient.createGame(name, 567, "short");
         const gameId = createResponse.gameId;
 
         const joinResponse: any = await apiClient.joinGame(gameId, name);

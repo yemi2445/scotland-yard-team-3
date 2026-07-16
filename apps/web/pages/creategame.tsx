@@ -1,23 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/router";
-import styles from "../components/Welcome.module.css";
-import cg from "../components/CreateGame.module.css";
-import { useGameState } from "@packages/providers";
-import { ROUND_OPTIONS, MAX_ROUNDS, getColourHex, DEFAULT_MAP_ID, AVAILABLE_MAPS } from "@packages/utils";
-import { apiClient } from "@packages/api";
+import React, { useEffect, useMemo } from "react"
+import { useRouter } from "next/router"
+import styles from "../components/Welcome.module.css"
+import cg from "../components/CreateGame.module.css"
+import { useGameState } from "@packages/providers"
+import { getColourHex } from "@packages/utils"
+import { apiClient } from "@packages/api"
 
 export default function CreateGame() {
     const router = useRouter();
-
-    const { game, playerId, currentPlayer } = useGameState();
-    const [rounds, setRounds] = useState(MAX_ROUNDS);
-    const [mapId, setMapId] = useState(DEFAULT_MAP_ID);
-    const [spectatorEnabled, setSpectatorEnabled] = useState(false);
-
-    useEffect(() => {
-        if (!game || !currentPlayer) return;
-        setSpectatorEnabled(currentPlayer.isSpectator || false);
-    }, [game, currentPlayer]);
+    const { game, playerId, currentPlayer, setGame, setPlayerId } = useGameState();
 
     const players = useMemo(() => {
         if (!game) return [];
@@ -29,59 +20,31 @@ export default function CreateGame() {
             router.push("/welcome");
             return;
         }
-
         if (game.status === "active") {
             router.push("/play");
         }
     }, [game, router]);
 
-    useEffect(() => {
-        if (!game) return;
-        setRounds(game.totalRounds || MAX_ROUNDS);
-        setMapId(game.mapId || DEFAULT_MAP_ID);
-    }, [game]);
+    const rounds = game?.totalRounds || 0;
+    const selectedMapName = game?.mapName ?? "Mini Map";
 
-    const selectedMapName = useMemo(() => {
-        return AVAILABLE_MAPS.find((m) => m.id === mapId)?.name ?? "Unknown map";
-    }, [mapId]);
-
-    const updateRounds = (nextRounds: number) => {
-        if (!game || !playerId || !currentPlayer?.isHost) return;
-
-        setRounds(nextRounds);
-        apiClient.updateGame(game.pin, playerId, { totalRounds: nextRounds }).catch((err) => {
-            const message = err instanceof Error ? err.message : String(err);
-            alert(`Failed to update rounds: ${message}`);
-            setRounds(game.totalRounds || MAX_ROUNDS);
-        });
-    };
-
-    const updateMap = (nextMapId: typeof mapId) => {
-        if (!game || !playerId || !currentPlayer?.isHost) return;
-
-        setMapId(nextMapId);
-        apiClient.updateGame(game.pin, playerId, { mapId: nextMapId }).catch((err) => {
-            const message = err instanceof Error ? err.message : String(err);
-            alert(`Failed to update map: ${message}`);
-            setMapId(game.mapId || DEFAULT_MAP_ID);
-        });
-    };
-
-    const handleSpectatorToggle = () => {
-        if (!currentPlayer?.isHost) return;
-
-        apiClient.setGameSpectator(game!.pin, playerId!).then((response) => {
-            setSpectatorEnabled(response.spectatorModeEnabled);
-        })
-    };
-
-    const createGame = () => {
+    const handleStart = async () => {
         if (!game || !playerId) return;
-        apiClient.startGame(game.pin, playerId, rounds, mapId).catch((err) => {
+        try {
+            await apiClient.startGame(game.pin, playerId)
+            router.push("/play");
+        } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             alert(`Failed to start game: ${message}`);
-        });
-    }
+        }
+    };
+    
+
+    const handleLeave = () => {
+        setGame(null);
+        setPlayerId(null);
+        router.push("/welcome")
+    };
 
     return (
         <div className={styles.page}>
@@ -110,68 +73,41 @@ export default function CreateGame() {
                 <div className={cg.controlsRow}>
                     <div className={cg.mapRow}>
                         <span className={cg.mapLabel}>Map:</span>
-                        {currentPlayer?.isHost ? (
-                            <div className={cg.mapChips}>
-                                {AVAILABLE_MAPS.map((map) => (
-                                    <button
-                                        key={map.id}
-                                        type="button"
-                                        className={`${cg.mapChip} ${mapId === map.id ? cg.mapChipSelected : ""}`}
-                                        onClick={() => updateMap(map.id)}
-                                    >
-                                        {map.name}
-                                    </button>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className={cg.mapChips}>
-                                <span className={`${cg.mapChip} ${cg.mapChipSelected}`}>{selectedMapName}</span>
-                            </div>
-                        )}
+                        <div className={cg.mapChips}>
+                            <span className={`${cg.mapChip} ${cg.mapChipSelected}`}>
+                                {selectedMapName}
+                            </span>
+                        </div>
                     </div>
 
                     <div className={cg.roundsRow}>
                         <span className={cg.roundsLabel}>Rounds:</span>
-                        {currentPlayer?.isHost ? (
-                            <div className={cg.roundsChips}>
-                                {ROUND_OPTIONS.map((r) => (
-                                    <button
-                                        key={r}
-                                        type="button"
-                                        className={`${cg.roundsChip} ${rounds === r ? cg.roundsChipSelected : ""}`}
-                                        onClick={() => updateRounds(r)}
-                                    >
-                                        {r}
-                                    </button>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className={cg.roundsChips}>
-                                <span className={`${cg.roundsChip} ${cg.roundsChipSelected}`}>{rounds}</span>
-                            </div>
-                        )}
+                        <div className={cg.roundsChips}>
+                            <span className={`${cg.roundsChip} ${cg.roundsChipSelected}`}>
+                                {rounds}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
                 {currentPlayer?.isHost && (
-                    <div className={cg.spectatorRow}>
-                        <label className={cg.spectatorLabel}>
-                            <input
-                                type="checkbox"
-                                checked={spectatorEnabled}
-                                onChange={handleSpectatorToggle}
-                            />
-                            Spectator Mode
-                        </label>
-                    </div>
-                )}
-
-                {currentPlayer?.isHost && (
-                    <button className={`${styles.button} ${styles.join} ${cg.start}`} onClick={createGame}>
+                    <button className={`${styles.button} ${styles.join} ${cg.start}`} onClick={handleStart}>
                         Start Game
                     </button>
                 )}
+
+                <button className={`${styles.button} ${cg.leave}`} onClick={handleLeave}>
+                    Leave Lobby
+                </button>
             </div>
         </div>
     );
 }
+
+    
+
+
+
+
+
+

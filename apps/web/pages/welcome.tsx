@@ -74,24 +74,57 @@ export default function Welcome() {
         }
     };
 
-    const createClicked = async () => {
+    const createClicked = async() => {
         try {
             if (name.trim().length === 0) {
-                alert("Please enter your name before creating a game.");
+                alert("Please enter your name before creating a game");
                 return;
             }
 
-            // Backend v1: colour is now sent in the create payload
-            const { game, playerId } = await apiClient.createGame(name, 1, "short");
+            // Step 1: Create game
+            const createResponse: any = await apiClient.createGame(name, 567, "short");
+            const gameId = createResponse.gameId;
 
-            setPlayerId(playerId);
-            setGame(game);
-            router.push("/creategame");
+            // Step 2: Join as fugitive
+            const joinResponse: any = await apiClient.joinGame(gameId, name);
+            const playerId = String(joinResponse.playerId);
+
+            // Step 3: Fetch game state
+            const rawGame: any = await apiClient.getGame(gameId);
+            const mapData: any = await apiClient.getMap(rawGame.mapId)
+
+            const game: any = {
+                pin: String(rawGame.gameId),
+                mapId: rawGame.mapId,
+                mapName: mapData?.mapName ?? "Mini Map",
+                status: "waiting",
+                currentTurn: null,
+                currentRound: rawGame.round ?? 0,
+                totalRounds: rawGame.length ?? 0,
+                winMessage: null,
+                travelLog: [],
+                players: (rawGame.players ?? []).map((p: any, i: number) => ({
+                    id: String(p.playerId),
+                    name: p.playerName,
+                    colour: p.colour?.toLowerCase() ?? "clear",
+                    isLecturer: p.colour?.toLowerCase() === "clear",
+                    isHost: i === 0,
+                    position: typeof p.location === "number" ? p.location : 0,
+                    tickets: { yellow: 0, green: 0, red: 0, black: 0, x2: 0 },
+                    isSpectator: false,
+            })),
+        };
+
+        setPlayerId(playerId);
+        setGame(game);
+        router.push("/creategame");
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             alert(`Error connecting to backend. Reason: ${message}`);
         }
+
     };
+    
 
     const selectedHex = getColourHex(colour);
 

@@ -197,3 +197,13 @@
     accent-color: rgba(255, 255, 255, 0.92);
     cursor: pointer;
 }
+
+.leave {
+    margin-top: 12px;
+    width: min(220px, 70vw);
+    height: 52px;
+    font-size: 18px;
+    background: rgba(220, 50, 50, 0.85) !important;
+    color: #fff !important;
+    border: 2px solid #000 !important;
+}
