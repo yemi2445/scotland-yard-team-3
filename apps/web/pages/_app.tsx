@@ -11,9 +11,7 @@ function WebLeaveHandler({ children }: { children: React.ReactNode }) {
         if (!game?.pin || !playerId) return;
 
         const handleLeave = () => {
-            if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
-                apiClient.leaveGame(game.pin, playerId)
-            }
+            console.log("Player Left Game")
         };
 
         window.addEventListener("pagehide", handleLeave);

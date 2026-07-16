@@ -61,7 +61,7 @@ function MobileLeaveHandler({ children }: { children: React.ReactNode }) {
         const handleLeave = () => {
             const { pin, playerId } = gameDataRef.current;
             if (!pin || !playerId) return;
-            apiClient.leaveGame(pin, playerId);
+            console.log("Player Left Game")
         }
 
         window.addEventListener("pagehide", handleLeave);
