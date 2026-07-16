@@ -52,10 +52,12 @@ export default function Play() {
             if (!currentPlayer) return;
             setShownWinMessage(true);
             alert(game.winMessage);
+            router.push("/creategame");
         } else if (!gameOver && shownWinMessage) {
             setShownWinMessage(false);
         }
-    }, [gameOver, game?.winMessage, shownWinMessage, currentPlayer]);
+    }, [gameOver, game?.winMessage, shownWinMessage, currentPlayer]);    
+
 
     const handleTransportSelect = useCallback((t: TransportType) => {
         if (SECONDARY_TRANSPORTS.includes(t)) {
@@ -117,6 +119,37 @@ export default function Play() {
                     isMyTurn={isMyTurn}
                 />
             )}
+            {currentPlayer.isLecturer && isMyTurn && (
+    <div style={{
+        position: "fixed",
+        bottom: 100,
+        right: 20,
+        zIndex: 100,
+    }}>
+        <button
+            onClick={async () => {
+                try {
+                    await apiClient.surrender(playerId, game.pin);
+                } catch (err) {
+                    const message = err instanceof Error ? err.message : String(err);
+                    alert(`Surrender failed: ${message}`);
+                }
+            }}
+            style={{
+                backgroundColor: "rgba(220,50,50,0.9)",
+                color: "#fff",
+                fontWeight: "800",
+                fontSize: 14,
+                padding: "10px 20px",
+                borderRadius: 10,
+                border: "2px solid #000",
+                cursor: "pointer",
+            }}
+        >
+            Surrender
+        </button>
+    </div>
+)}
         </div>
     );
 }
