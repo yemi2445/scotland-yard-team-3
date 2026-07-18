@@ -18,20 +18,12 @@ export default function PlayScreen({ navigation }: NavigationProps) {
     const [shownWinMessage, setShownWinMessage] = useState(false);
     const [selectedTransport, setSelectedTransport] = useState<TransportType | null>(null);
     const [selectedSecondaryTransport, setSelectedSecondaryTransport] = useState<TransportType | null>(null);
-     
-    
+
     useEffect(() => {
-        if (gameOver && game?.winMessage && !shownWinMessage) {
-            if (!currentPlayer) return;
-            setShownWinMessage(true);
-            alert(game.winMessage);
-            alert(game.winMessage);
-            // Go back to lobby for a rematch
-            navigation.navigate("CreateGame");
-        } else if (!gameOver && shownWinMessage) {
-            setShownWinMessage(false);
+        if (!game || !playerId) {
+            navigation.navigate("Welcome");
         }
-    }, [gameOver, game?.winMessage, shownWinMessage, currentPlayer]);
+    }, [game, playerId, navigation]);
 
     const currentPlayer = useMemo(() => {
         if (!game) return null;
@@ -62,6 +54,7 @@ export default function PlayScreen({ navigation }: NavigationProps) {
             if (!currentPlayer) return;
             setShownWinMessage(true);
             alert(game.winMessage);
+            navigation.navigate("CreateGame");
         } else if (!gameOver && shownWinMessage) {
             setShownWinMessage(false);
         }
@@ -74,40 +67,22 @@ export default function PlayScreen({ navigation }: NavigationProps) {
             setSelectedTransport((prev) => (prev === t ? null : t));
         }
     }, []);
-    
-    const handleSurrender = useCallback(
-        async () => {
-            if (!game || !playerId) return;
-            try {
-                await apiClient.surrender(playerId, game.pin);
-            } catch (err) {
-                const message = err instanceof Error ? err.message : String(err);
-                alert(`Surrender failed: ${message}`);
-            }
-        },
-        [playerId, game]
-    );
-    
-    const handleStart = async() => {
+
+    const handleSurrender = useCallback(async () => {
         if (!game || !playerId) return;
         try {
-            await apiClient.startGame(game.pin, playerId);  
+            await apiClient.surrender(playerId, game.pin);
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
-            alert(`Start game failed: ${message}`);
+            alert(`Surrender failed: ${message}`);
         }
-    };
+    }, [playerId, game]);
 
     const handleMove = useCallback(
         async (destination: number, transport: TransportType) => {
             if (!game || !playerId) return;
             try {
-                await apiClient.makeMove(
-                    playerId,
-                    game.pin,
-                    transport,
-                    destination,
-                );
+                await apiClient.makeMove(playerId, game.pin, transport, destination);
                 setSelectedTransport(null);
                 setSelectedSecondaryTransport(null);
             } catch (err) {
@@ -121,12 +96,11 @@ export default function PlayScreen({ navigation }: NavigationProps) {
     if (!game || !playerId || !currentPlayer || !currentTurnPlayer) return null;
 
     const showTransportBar = !(currentTurnPlayer.isLecturer && !currentPlayer.isLecturer);
-    
+
     return (
         <View style={styles.container}>
             <View style={styles.content}>
                 <EscapeMenuOverlay onNavigateWelcome={() => navigation.navigate("Welcome")} />
-
                 <InteractiveMap
                     players={game.players}
                     currentRound={game.currentRound}
@@ -139,11 +113,8 @@ export default function PlayScreen({ navigation }: NavigationProps) {
                     onMove={handleMove}
                     mapId={game.mapId}
                 />
-
                 <TravelLog logs={game.travelLog} isLecturer={currentPlayer.isLecturer} gameOver={gameOver} totalRounds={game.totalRounds} />
-
                 <TurnIndicator currentPlayerName={currentTurnPlayer.id === playerId ? "Your" : `${currentTurnPlayer.name}'s`} round={game.currentRound} gameOver={gameOver} winMessage={game.winMessage} />
-
                 {showTransportBar && (
                     <TransportBar
                         player={currentTurnPlayer}
@@ -153,7 +124,6 @@ export default function PlayScreen({ navigation }: NavigationProps) {
                         isMyTurn={isMyTurn}
                     />
                 )}
-
                 {currentPlayer.isLecturer && isMyTurn && (
                     <View style={styles.surrenderContainer}>
                         <Pressable onPress={handleSurrender} style={styles.surrenderButton}>

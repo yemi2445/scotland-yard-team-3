@@ -250,7 +250,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
                     height: imgDims.height,
                 }}
             >
-                <img ref={imgRef} src={mapData.mapImage} alt="Game Map" className={styles.mapImage} onLoad={handleImageLoad} draggable={false} />
+                <img ref={imgRef} src="/leeds_center_map.png"  alt="Game Map" className={styles.mapImage} onLoad={handleImageLoad} draggable={false} />
                 {imgDims.width > 0 && (
                     <>
                         <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
