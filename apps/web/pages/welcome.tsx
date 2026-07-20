@@ -13,6 +13,7 @@ export default function Welcome() {
     const [name, setName] = useState("");
     const [colour, setColour] = useState<PlayerColour>(ALLOWED_PLAYER_COLOURS[Math.floor(Math.random() * ALLOWED_PLAYER_COLOURS.length)]);
     const [colourOpen, setColourOpen] = useState(false);
+    const [mode, setMode] = useState<"create" | "join">("create");
 
     const canJoin = useMemo(() => {
         return isValidGamePin(pin) && name.trim() !== "" && colour.length > 0;
@@ -129,76 +130,80 @@ export default function Welcome() {
     const selectedHex = getColourHex(colour);
 
     return (
-        <div className={styles.page}>
-            <div className={styles.shapes} />
+    <div className={styles.page}>
+        <div className={styles.shapes} />
 
-            <div className={styles.content}>
-                <h1 className={styles.title}>The Leeds Files - Manhunt</h1>
+        <div className={styles.content}>
+            <h1 className={styles.title}>The Leeds Files - Manhunt</h1>
 
-                <div className={styles.center}>
-                    <div className={styles.label}>Enter game pin:</div>
-                    <input className={styles.pin} inputMode="numeric" placeholder="000-000" value={pin} onChange={(e) => setPin(formatGamePin(e.target.value))} />
+            <div className={styles.center}>
+                <div className={styles.label}>Enter Your Name:</div>
+                <input className={styles.pin} type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter name" />
 
-                    <div className={styles.label}>Enter your name:</div>
-                    <input className={styles.pin} type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter name" />
+                {mode === "join" && (
+                    <>
+                        <div className={styles.label}>Enter Game Pin:</div>
+                        <input className={styles.pin} inputMode="numeric" placeholder="000-000" value={pin} onChange={(e) => setPin(formatGamePin(e.target.value))} />
+                    </>
+                )}
 
-                    {/* Colour dropdown button (centered where Join button used to be) */}
-                    <button type="button" className={styles.colourChipCenter} onClick={() => setColourOpen(true)} aria-label="Select colour">
-                        <span className={styles.colourSwatch} style={{ backgroundColor: selectedHex }} />
-                        <span className={styles.colourChipText}>Colour</span>
-                        <span className={styles.colourChevron}>▾</span>
+                <button type="button" className={styles.colourChipCenter} onClick={() => setColourOpen(true)}>
+                    <span className={styles.colourSwatch} style={{ backgroundColor: selectedHex }} />
+                    <span className={styles.colourChipText}>Colour</span>
+                    <span className={styles.colourChevron}>▾</span>
+                </button>
+            </div>
+        </div>
+
+        <div className={styles.bottom3}>
+            <button className={`${styles.button} ${styles.instructions}`} onClick={() => router.push("/instructions")}>
+                Instructions
+            </button>
+
+            {mode === "create" ? (
+                <>
+                    <button className={`${styles.button} ${styles.join}`} onClick={() => setMode("join")}>
+                        Join Game
+                    </button>
+                    <button className={`${styles.button} ${styles.create}`} onClick={createClicked}>
+                        Create Game
+                    </button>
+                </>
+            ) : (
+                <>
+                    <button className={`${styles.button} ${styles.join}`} onClick={() => setMode("create")}>
+                        Back
+                    </button>
+                    <button className={`${styles.button} ${styles.create}`} disabled={!canJoin} onClick={joinClicked}>
+                        Confirm Join
+                    </button>
+                </>
+            )}
+        </div>
+
+        {/* Colour picker modal */}
+        {colourOpen && (
+            <div className={styles.modalBackdrop} role="presentation" onClick={() => setColourOpen(false)}>
+                <div className={styles.modalPanel} role="dialog" onClick={(e) => e.stopPropagation()}>
+                    <div className={styles.modalTitle}>Choose a colour</div>
+                    <div className={styles.colourGrid}>
+                        {PLAYER_COLOURS.map((c) => {
+                            const selected = c.key === colour;
+                            return (
+                                <button key={c.key} type="button"
+                                    className={`${styles.colourOptionWrap} ${selected ? styles.colourOptionSelected : ""}`}
+                                    onClick={() => { setColour(c.key); setColourOpen(false); }}>
+                                    <span className={styles.colourOption} style={{ backgroundColor: c.hex }} />
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <button type="button" className={styles.modalCloseButton} onClick={() => setColourOpen(false)}>
+                        Close
                     </button>
                 </div>
             </div>
-
-            {/* Bottom row: Instructions | Join Game | Create Game */}
-            <div className={styles.bottom3}>
-                <button className={`${styles.button} ${styles.instructions}`} onClick={() => router.push("/instructions")}>
-                    Instructions
-                </button>
-
-                <button className={`${styles.button} ${styles.join}`} disabled={!canJoin} onClick={joinClicked}>
-                    Join Game
-                </button>
-
-                <button className={`${styles.button} ${styles.create}`} onClick={createClicked}>
-                    Create Game
-                </button>
-            </div>
-
-            {/* Colour picker modal */}
-            {colourOpen && (
-                <div className={styles.modalBackdrop} role="presentation" onClick={() => setColourOpen(false)}>
-                    <div className={styles.modalPanel} role="dialog" aria-modal="true" aria-label="Choose a colour" onClick={(e) => e.stopPropagation()}>
-                        <div className={styles.modalTitle}>Choose a colour</div>
-
-                        <div className={styles.colourGrid}>
-                            {PLAYER_COLOURS.map((c) => {
-                                const selected = c.key === colour;
-
-                                return (
-                                    <button
-                                        key={c.key}
-                                        type="button"
-                                        className={`${styles.colourOptionWrap} ${selected ? styles.colourOptionSelected : ""}`}
-                                        onClick={() => {
-                                            setColour(c.key);
-                                            setColourOpen(false);
-                                        }}
-                                        aria-label={`Select colour ${c.key}`}
-                                    >
-                                        <span className={styles.colourOption} style={{ backgroundColor: c.hex }} />
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        <button type="button" className={styles.modalCloseButton} onClick={() => setColourOpen(false)}>
-                            Close
-                        </button>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
+        )}
+    </div>
+);
 }

@@ -37,6 +37,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                         margin: 0;
                         padding: 0;
                         height: 100%;
+                        background-color: #1a1a1a;
                     }
                 `}</style>
                 <Component {...pageProps} />

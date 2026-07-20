@@ -47,20 +47,22 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
         return () => { cancelled = true; };
     }, [mapId]);
 
-    const updateContainerDims = useCallback(() => {
-        if (containerRef.current) {
-            setContainerDims({
-                width: containerRef.current.clientWidth,
-                height: containerRef.current.clientHeight,
-            });
-        }
-    }, []);
-
     useEffect(() => {
-        updateContainerDims();
-        window.addEventListener("resize", updateContainerDims);
-        return () => window.removeEventListener("resize", updateContainerDims);
-    }, [updateContainerDims]);
+        setContainerDims({
+            width: window.innerWidth,
+            height: window.innerHeight,
+        });
+
+        const handleResize = () => {
+            setContainerDims({
+                width: window.innerWidth,
+                height: window.innerHeight,
+            });
+        };
+
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     const getMinScale = useCallback(() => {
         if (!imgDims.width || !containerDims.width) return 1;
@@ -99,9 +101,11 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
     }, [getMinScale, scale, pos.x, pos.y, constrainPos]);
 
     useEffect(() => {
-        if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
-            handleImageLoad({ currentTarget: imgRef.current } as React.SyntheticEvent<HTMLImageElement>);
-        }
+        if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0 && containerDims.width > 0) {
+            handleImageLoad({
+                currentTarget: imgRef.current,
+            } as React.SyntheticEvent<HTMLImageElement>);
+        } 
     }, [containerDims]);
 
     const currentPlayerObj = useMemo(() => {
@@ -195,6 +199,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
     // Early return AFTER all hooks
     if (!mapData) return <div className={styles.mapContainer} />;
 
+    console.log("imgDims:", imgDims, "containerDims:", containerDims, "scale:", scale);
+
     const handleMouseDown = (e: React.MouseEvent) => {
         setIsDragging(true);
         wasDraggingRef.current = false;
@@ -215,7 +221,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
     const handleMouseUp = () => setIsDragging(false);
 
     const handleWheel = (e: React.WheelEvent) => {
-        const newScale = Math.max(getMinScale(), Math.min(scale + (-e.deltaY * 0.001), 5));
+        const newScale = Math.max(getMinScale(), Math.min(scale * (1 - e.deltaY * 0.001), 5));
         const rect = containerRef.current?.getBoundingClientRect();
         if (rect) {
             const mouseX = e.clientX - rect.left;
@@ -228,16 +234,20 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
     };
 
     const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-        const img = e.currentTarget;
-        const dims = { width: img.naturalWidth, height: img.naturalHeight };
-        setImgDims(dims);
-        const initialScale = Math.min(containerDims.width / dims.width, containerDims.height / dims.height) * 0.9;
+    const img = e.currentTarget;
+    const dims = { width: img.naturalWidth, height: img.naturalHeight };
+    setImgDims(dims);
+    if (containerDims.width > 0 && containerDims.height > 0) {
+        const scaleX = containerDims.width / dims.width;
+        const scaleY = containerDims.height / dims.height;
+        // Use the LARGER scale to fill the screen completely
+        const initialScale = Math.max(scaleX, scaleY);
         setScale(initialScale);
-        setPos({
-            x: (containerDims.width - dims.width * initialScale) / 2,
-            y: (containerDims.height - dims.height * initialScale) / 2,
-        });
-    };
+        const initialX = (containerDims.width - dims.width * initialScale) / 2;
+        const initialY = (containerDims.height - dims.height * initialScale) / 2;
+        setPos({ x: initialX, y: initialY });
+    }
+};
 
     return (
         <div ref={containerRef} className={styles.mapContainer} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onWheel={handleWheel}>

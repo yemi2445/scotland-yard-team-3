@@ -92,25 +92,33 @@ export default function Play() {
     const showTransportBar = !(currentTurnPlayer.isLecturer && !currentPlayer?.isLecturer);
 
     return (
-        <div style={{ width: "100vw", height: "100vh" }}>
-            <EscapeMenu onNavigateWelcome={() => router.replace("/welcome")} />
+    <div style={{ width: "100vw", height: "100vh", backgroundColor: "#1a1a1a", overflow: "hidden", position: "fixed" }}>
+        <EscapeMenu onNavigateWelcome={() => router.replace("/welcome")} />
 
-            <InteractiveMap
-                players={game.players}
-                currentRound={game.currentRound}
-                isLecturer={currentPlayer.isLecturer}
-                gameOver={gameOver}
-                gamePin={game.pin}
-                currentPlayerId={playerId}
-                currentTurn={game.currentTurn}
-                selectedTransport={selectedTransport}
-                onMove={handleMove}
-                mapId={game.mapId}
-            />
+        <InteractiveMap
+            players={game.players}
+            currentRound={game.currentRound}
+            isLecturer={currentPlayer.isLecturer}
+            gameOver={gameOver}
+            gamePin={game.pin}
+            currentPlayerId={playerId}
+            currentTurn={game.currentTurn}
+            selectedTransport={selectedTransport}
+            onMove={handleMove}
+            mapId={game.mapId}
+        />
+
+        {/* Overlays on top of map */}
+        <div style={{ position: "fixed", top: 0, left: 0, zIndex: 10, pointerEvents: "none" }}>
             <TravelLog logs={game.travelLog} isLecturer={currentPlayer.isLecturer} gameOver={gameOver} totalRounds={game.totalRounds}/>
+        </div>
 
+        <div style={{ position: "fixed", top: 0, right: 0, zIndex: 10, pointerEvents: "none" }}>
             <TurnIndicator currentPlayerName={currentTurnPlayer.id === playerId ? "Your" : `${currentTurnPlayer.name}'s`} round={game.currentRound} gameOver={gameOver} winMessage={game.winMessage} />
-            {showTransportBar && (
+        </div>
+
+        {showTransportBar && (
+            <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", zIndex: 10 }}>
                 <TransportBar
                     player={currentTurnPlayer}
                     selectedTransport={selectedTransport}
@@ -118,38 +126,35 @@ export default function Play() {
                     onTransportSelect={handleTransportSelect}
                     isMyTurn={isMyTurn}
                 />
-            )}
-            {currentPlayer.isLecturer && isMyTurn && (
-    <div style={{
-        position: "fixed",
-        bottom: 100,
-        right: 20,
-        zIndex: 100,
-    }}>
-        <button
-            onClick={async () => {
-                try {
-                    await apiClient.surrender(playerId, game.pin);
-                } catch (err) {
-                    const message = err instanceof Error ? err.message : String(err);
-                    alert(`Surrender failed: ${message}`);
-                }
-            }}
-            style={{
-                backgroundColor: "rgba(220,50,50,0.9)",
-                color: "#fff",
-                fontWeight: "800",
-                fontSize: 14,
-                padding: "10px 20px",
-                borderRadius: 10,
-                border: "2px solid #000",
-                cursor: "pointer",
-            }}
-        >
-            Surrender
-        </button>
+            </div>
+        )}
+
+        {currentPlayer.isLecturer && isMyTurn && (
+            <div style={{ position: "fixed", bottom: 100, right: 20, zIndex: 100 }}>
+                <button
+                    onClick={async () => {
+                        try {
+                            await apiClient.surrender(playerId, game.pin);
+                        } catch (err) {
+                            const message = err instanceof Error ? err.message : String(err);
+                            alert(`Surrender failed: ${message}`);
+                        }
+                    }}
+                    style={{
+                        backgroundColor: "rgba(220,50,50,0.9)",
+                        color: "#fff",
+                        fontWeight: "800",
+                        fontSize: 14,
+                        padding: "10px 20px",
+                        borderRadius: 10,
+                        border: "2px solid #000",
+                        cursor: "pointer",
+                    }}
+                >
+                    Surrender
+                </button>
+            </div>
+        )}
     </div>
-)}
-        </div>
-    );
+);
 }

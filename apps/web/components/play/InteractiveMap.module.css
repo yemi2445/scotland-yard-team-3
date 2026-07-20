@@ -1,13 +1,16 @@
 .mapContainer {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100vw;
     height: 100vh;
     overflow: hidden;
-    position: relative;
     background-color: #1a1a1a;
     cursor: grab;
     touch-action: none;
     z-index: 1;
 }
+
 
 .mapContainer:active {
     cursor: grabbing;
@@ -24,6 +27,8 @@
     display: block;
     user-select: none;
     -webkit-user-drag: none;
+    width: 100%;
+    height: auto;
 }
 
 .transportPickerBackdrop {
