@@ -100,6 +100,32 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
         if (constrained.x !== pos.x || constrained.y !== pos.y) setPos(constrained);
     }, [getMinScale, scale, pos.x, pos.y, constrainPos]);
 
+    // Track drag on window, not just the map div: if a drag ends with the cursor over another
+    // overlay (e.g. the transport bar) or outside the viewport, the div never sees mouseup and
+    // isDragging gets stuck true, making the map keep "dragging" on the next mouse movement.
+    useEffect(() => {
+        if (!isDragging) return;
+
+        const handleWindowMouseMove = (e: MouseEvent) => {
+            if (dragStartPosRef.current) {
+                const dx = Math.abs(e.clientX - dragStartPosRef.current.x);
+                const dy = Math.abs(e.clientY - dragStartPosRef.current.y);
+                if (dx > 4 || dy > 4) wasDraggingRef.current = true;
+            }
+            setPos(constrainPos(e.clientX - dragStart.x, e.clientY - dragStart.y, scale));
+        };
+
+        const handleWindowMouseUp = () => setIsDragging(false);
+
+        window.addEventListener("mousemove", handleWindowMouseMove);
+        window.addEventListener("mouseup", handleWindowMouseUp);
+
+        return () => {
+            window.removeEventListener("mousemove", handleWindowMouseMove);
+            window.removeEventListener("mouseup", handleWindowMouseUp);
+        };
+    }, [isDragging, dragStart, scale, constrainPos]);
+
     useEffect(() => {
         if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0 && containerDims.width > 0) {
             handleImageLoad({
@@ -208,18 +234,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
         setDragStart({ x: e.clientX - pos.x, y: e.clientY - pos.y });
     };
 
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isDragging) return;
-        if (dragStartPosRef.current) {
-            const dx = Math.abs(e.clientX - dragStartPosRef.current.x);
-            const dy = Math.abs(e.clientY - dragStartPosRef.current.y);
-            if (dx > 4 || dy > 4) wasDraggingRef.current = true;
-        }
-        setPos(constrainPos(e.clientX - dragStart.x, e.clientY - dragStart.y, scale));
-    };
-
-    const handleMouseUp = () => setIsDragging(false);
-
     const handleWheel = (e: React.WheelEvent) => {
         const newScale = Math.max(getMinScale(), Math.min(scale * (1 - e.deltaY * 0.001), 5));
         const rect = containerRef.current?.getBoundingClientRect();
@@ -250,7 +264,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
 };
 
     return (
-        <div ref={containerRef} className={styles.mapContainer} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onWheel={handleWheel}>
+        <div ref={containerRef} className={styles.mapContainer} style={{ pointerEvents: "auto" }} onMouseDown={handleMouseDown} onWheel={handleWheel}>
             <div
                 className={styles.mapWrapper}
                 style={{

@@ -40,6 +40,11 @@ export default function Play() {
 
     const isMyTurn = !gameOver && !!currentPlayer && currentPlayer.id === game?.currentTurn;
 
+    // currentTurnPlayer is null whenever nobody specific can be identified as "it" from this
+    // viewer's perspective (e.g. the Fugitive's client during the Detective phase, since any
+    // detective may act). Fall back to the viewer's own player so the bar/label still render.
+    const activeTurnPlayer = currentTurnPlayer ?? currentPlayer ?? null;
+
     useEffect(() => {
         if (!isMyTurn) {
             setSelectedTransport(null);
@@ -67,16 +72,21 @@ export default function Play() {
         }
     }, []);
 
+    const handleSurrender = useCallback(async () => {
+        if (!game || !playerId) return;
+        try {
+            await apiClient.surrender(playerId, game.pin);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            alert(`Surrender failed: ${message}`);
+        }
+    }, [playerId, game]);
+
     const handleMove = useCallback(
         async (destination: number, transport: TransportType) => {
             if (!game || !playerId) return;
             try {
-                await apiClient.makeMove(game.pin, playerId, {
-                    playerId,
-                    transport,
-                    destination,
-                    ...(selectedSecondaryTransport ? { secondaryTransport: selectedSecondaryTransport } : {}),
-                });
+                await apiClient.makeMove(playerId, game.pin, transport, destination, selectedSecondaryTransport ?? undefined);
                 setSelectedTransport(null);
                 setSelectedSecondaryTransport(null);
             } catch (err) {
@@ -87,9 +97,14 @@ export default function Play() {
         [game, playerId, selectedSecondaryTransport]
     );
 
-    if (!game || !playerId || !currentPlayer || !currentTurnPlayer) return null;
+    if (!game || !playerId || !currentPlayer || !activeTurnPlayer) return null;
 
-    const showTransportBar = !(currentTurnPlayer.isLecturer && !currentPlayer?.isLecturer);
+    const showTransportBar = !(activeTurnPlayer.isLecturer && !currentPlayer.isLecturer);
+    const turnLabel = currentTurnPlayer
+        ? currentTurnPlayer.id === playerId
+            ? "Your"
+            : `${currentTurnPlayer.name}'s`
+        : "Detectives'";
 
     return (
     <div style={{ width: "100vw", height: "100vh", backgroundColor: "#1a1a1a", overflow: "hidden", position: "fixed" }}>
@@ -107,54 +122,54 @@ export default function Play() {
             onMove={handleMove}
             mapId={game.mapId}
         />
+    {/* Travel log - no interaction needed */}
+    <div style={{ position: "fixed", top: 0, left: 0, zIndex: 10, pointerEvents: "none" }}>
+        <TravelLog logs={game.travelLog} isLecturer={currentPlayer.isLecturer} gameOver={gameOver} totalRounds={game.totalRounds}/>
+    </div>
 
-        {/* Overlays on top of map */}
-        <div style={{ position: "fixed", top: 0, left: 0, zIndex: 10, pointerEvents: "none" }}>
-            <TravelLog logs={game.travelLog} isLecturer={currentPlayer.isLecturer} gameOver={gameOver} totalRounds={game.totalRounds}/>
-        </div>
+    {/* Turn indicator - no interaction needed */}
+    <div style={{ position: "fixed", top: 0, right: 0, zIndex: 10, pointerEvents: "none" }}>
+        <TurnIndicator currentPlayerName={turnLabel} round={game.currentRound} gameOver={gameOver} winMessage={game.winMessage} />
+    </div>
 
-        <div style={{ position: "fixed", top: 0, right: 0, zIndex: 10, pointerEvents: "none" }}>
-            <TurnIndicator currentPlayerName={currentTurnPlayer.id === playerId ? "Your" : `${currentTurnPlayer.name}'s`} round={game.currentRound} gameOver={gameOver} winMessage={game.winMessage} />
-        </div>
+    {showTransportBar && (
+    <div style={{ 
+        position: "fixed", 
+        bottom: 0, 
+        left: "50%", 
+        transform: "translateX(-50%)", 
+        zIndex: 9999,
+        pointerEvents: "all"
+    }}>
+        <TransportBar
+            player={activeTurnPlayer}
+            selectedTransport={selectedTransport}
+            selectedSecondaryTransport={selectedSecondaryTransport}
+            onTransportSelect={handleTransportSelect}
+            isMyTurn={isMyTurn}
+        />
+    </div>
+)}
 
-        {showTransportBar && (
-            <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", zIndex: 10 }}>
-                <TransportBar
-                    player={currentTurnPlayer}
-                    selectedTransport={selectedTransport}
-                    selectedSecondaryTransport={selectedSecondaryTransport}
-                    onTransportSelect={handleTransportSelect}
-                    isMyTurn={isMyTurn}
-                />
-            </div>
-        )}
-
-        {currentPlayer.isLecturer && isMyTurn && (
-            <div style={{ position: "fixed", bottom: 100, right: 20, zIndex: 100 }}>
-                <button
-                    onClick={async () => {
-                        try {
-                            await apiClient.surrender(playerId, game.pin);
-                        } catch (err) {
-                            const message = err instanceof Error ? err.message : String(err);
-                            alert(`Surrender failed: ${message}`);
-                        }
-                    }}
-                    style={{
-                        backgroundColor: "rgba(220,50,50,0.9)",
-                        color: "#fff",
-                        fontWeight: "800",
-                        fontSize: 14,
-                        padding: "10px 20px",
-                        borderRadius: 10,
-                        border: "2px solid #000",
-                        cursor: "pointer",
-                    }}
-                >
-                    Surrender
-                </button>
-            </div>
-        )}
+    {currentPlayer.isLecturer && isMyTurn && (
+    <div style={{ position: "fixed", bottom: 100, right: 20, zIndex: 100 }}>
+        <button
+            onClick={handleSurrender}
+            style={{
+                backgroundColor: "rgba(220,50,50,0.9)",
+                color: "#fff",
+                fontWeight: "800",
+                fontSize: 14,
+                padding: "10px 20px",
+                borderRadius: 10,
+                border: "2px solid #000",
+                cursor: "pointer",
+            }}
+        >
+            Surrender
+        </button>
+    </div>
+)}
     </div>
 );
 }

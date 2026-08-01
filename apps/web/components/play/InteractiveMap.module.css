@@ -3,14 +3,13 @@
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100vh;
+    height: calc(100vh - 100px); /* leave space for transport bar! */
     overflow: hidden;
     background-color: #1a1a1a;
     cursor: grab;
     touch-action: none;
     z-index: 1;
 }
-
 
 .mapContainer:active {
     cursor: grabbing;

@@ -22,6 +22,7 @@
         "react-dom": "19.1.0"
     },
     "dependencies": {
-        "expo-linear-gradient": "^15.0.8"
+        "expo-linear-gradient": "^15.0.8",
+        "hook.js": "^0.1.0"
     }
 }
