@@ -15,7 +15,7 @@ interface InteractiveMapProps {
     gameOver?: boolean;
     gamePin: string;
     currentPlayerId?: string;
-    currentTurn?: string;
+    currentTurn?: string | null;
     selectedTransport?: TransportType | null;
     onMove?: (destination: number, transport: TransportType) => void;
     mapId?: MapId;

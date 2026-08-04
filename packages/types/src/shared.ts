@@ -3,7 +3,8 @@ import { MapId } from "@packages/utils";
 export interface Game {
     pin: string;
     players: Player[];
-    currentTurn: number;
+    currentTurn: string | null;
+    currentRound: number;
     totalRounds: number;
     mapId: MapId;
     mapName?: string;

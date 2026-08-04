@@ -41,12 +41,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                     const mapped = {
                         pin: String(rawGame.gameId),
                         mapId: rawGame.mapId,
-                        status: rawGame.state === "Open" ? "Waiting" :
-                                rawGame.state === "Fugitive" || rawGame.state === "Detective" ? "active" : "finished",
+                        status: (rawGame.state === "Open" ? "waiting" :
+                                rawGame.state === "Fugitive" || rawGame.state === "Detective" ? "active" : "finished") as Game["status"],
                         currentTurn,
                         currentRound: rawGame.round ?? 0,
                         totalRounds: rawGame.length ?? 0,
-                        winMessage: rawGame.winner !== "None" ? `${rawGame.winner} wins!` : null,
+                        winMessage: rawGame.winner !== "None" ? `${rawGame.winner} wins!` : undefined,
                         travelLog: [],
                         players: (rawGame.players ?? []).map((p: any, i: number) => {
                             const parsedLocation = Number(p.location);

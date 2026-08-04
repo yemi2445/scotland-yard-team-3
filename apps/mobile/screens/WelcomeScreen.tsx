@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { useFonts, Pacifico_400Regular } from "@expo-google-fonts/pacifico";
-import { ALLOWED_PLAYER_COLOURS, formatGamePin, getColourHex, isValidGamePin, PLAYER_COLOURS, PlayerColour } from "@packages/utils";
+import { formatGamePin, isValidGamePin } from "@packages/utils";
 import { apiClient } from "@packages/api";
 import type { NavigationProps } from "../App";
 import { useGameState } from "@packages/providers";
@@ -14,28 +14,24 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
 
     const [pin, setPin] = useState("");
     const [name, setName] = useState("");
-    const [colour, setColour] = useState<PlayerColour>(ALLOWED_PLAYER_COLOURS[Math.floor(Math.random() * ALLOWED_PLAYER_COLOURS.length)]);
-    const [colourOpen, setColourOpen] = useState(false);
 
     const [fontsLoaded] = useFonts({
         Pacifico: Pacifico_400Regular,
     });
 
-    const canJoin = useMemo(() => isValidGamePin(pin) && name.trim().length > 0, [pin, name, colour]);
+    const canJoin = useMemo(() => isValidGamePin(pin) && name.trim().length > 0, [pin, name]);
 
     const handlePlay = async () => {
         try {
             const gamePin = formatGamePin(pin).replace("-","");
 
-            // Static v1: colour is selected locally (not sent yet)
-            const response = await apiClient.joinGame(gamePin, name );
+            const response: any = await apiClient.joinGame(gamePin, name );
             if (!response.playerId) {
                 alert("Failed to join game — no player ID returned.");
                 return;
             }
 
             console.log("Joined game:", response.game);
-            console.log("Selected colour:", colour);
 
             setGame(response.game);
             setPlayerId(response.playerId);
@@ -49,29 +45,17 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
             const message = err instanceof Error ? err.message : String(err);
             const lower = message.toLowerCase();
 
-            if (lower.includes("colour") && (lower.includes("taken"))) {
-                alert("That colour is already taken. Please choose another.");
-                setColourOpen(true);
-                return;
-            }
-
             if (lower.includes("name") && lower.includes("taken")) {
                 alert("That name is already taken in this lobby. Please choose another.");
                 return;
             }
-            
+
             if (lower.includes("full")) {
                 alert("This lobby is full.");
                 return;
             }
             if (lower.includes("not accepting")) {
                 alert("This game has already started.");
-                return;
-            }
-
-            if (lower.includes("invalid colour")) {
-                alert("That colour selection isn’t valid. Please choose again.");
-                setColourOpen(true);
                 return;
             }
 
@@ -96,11 +80,11 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
         const mapData: any = await apiClient.getMap(rawGame.mapId);
         const mapName = mapData?.mapName ?? "Mini Map";
 
-         const game = {
+         const game: any = {
             pin: String(rawGame.gameId),
             mapId: rawGame.mapId,
             mapName: mapName,
-            status: rawGame.state === "Open" ? "lobby" :
+            status: rawGame.state === "Open" ? "waiting" :
                 rawGame.state === "Fugitive" || rawGame.state === "Detective" ? "active" : "finished",
             currentTurn: rawGame.currentTurn ?? null,
             currentRound: rawGame.round ?? 0,
@@ -136,8 +120,6 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
 
     if (!fontsLoaded) return null;
 
-    const selectedHex = getColourHex(colour);
-
     return (
         <LinearGradient colors={["#6f8c59", "#2f4f2f", "#3f3f3f"]} style={styles.background}>
             {/* Background shapes */}
@@ -168,13 +150,6 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
 
                                 <Text style={[styles.label, styles.labelSpacing]}>Enter your name:</Text>
                                 <TextInput value={name} onChangeText={setName} style={styles.input} placeholder="Enter name" placeholderTextColor="rgba(255,255,255,0.35)" />
-
-                                {/* Colour dropdown chip (centered) */}
-                                <Pressable onPress={() => setColourOpen(true)} accessibilityRole="button" accessibilityLabel="Select colour" style={({ pressed }) => [styles.colourChipCenter, pressed && styles.pressedDown]}>
-                                    <View style={[styles.colourSwatch, { backgroundColor: selectedHex }]} />
-                                    <Text style={styles.colourChipText}>Colour</Text>
-                                    <Text style={styles.colourChevron}>▾</Text>
-                                </Pressable>
                             </View>
                         </View>
 
@@ -193,47 +168,6 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
                             </Pressable>
                         </View>
                     </View>
-
-                    {/* In-screen overlay popup (NOT Modal) */}
-                    {colourOpen && (
-                        <View style={styles.overlayRoot}>
-                            <Pressable style={styles.overlayBackdrop} onPress={() => setColourOpen(false)} />
-
-                            <View style={styles.overlayPanel}>
-                                <Text style={styles.modalTitle}>Choose a colour</Text>
-
-                                <View style={styles.colourGrid}>
-                                    {PLAYER_COLOURS.map((c) => {
-                                        const isSelected = c.key === colour;
-
-                                        return (
-                                            <Pressable
-                                                key={c.key}
-                                                onPress={() => {
-                                                    setColour(c.key);
-                                                    setColourOpen(false);
-                                                }}
-                                                style={[styles.colourOptionWrap, isSelected && styles.colourOptionSelected]}
-                                            >
-                                                <View
-                                                    style={[
-                                                        styles.colourOption,
-                                                        {
-                                                            backgroundColor: c.hex,
-                                                        },
-                                                    ]}
-                                                />
-                                            </Pressable>
-                                        );
-                                    })}
-                                </View>
-
-                                <Pressable onPress={() => setColourOpen(false)} style={styles.modalCloseButton}>
-                                    <Text style={styles.modalCloseText}>Close</Text>
-                                </Pressable>
-                            </View>
-                        </View>
-                    )}
                 </KeyboardAvoidingView>
             </SafeAreaView>
         </LinearGradient>
@@ -389,40 +323,6 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
     },
 
-    colourChipCenter: {
-        marginTop: 14,
-        width: "52%",
-        height: 38,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.28)",
-        backgroundColor: "rgba(0,0,0,0.18)",
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-
-    colourSwatch: {
-        width: 14,
-        height: 14,
-        borderRadius: 4,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.35)",
-        marginRight: 8,
-    },
-
-    colourChipText: {
-        color: "rgba(255,255,255,0.85)",
-        fontSize: 13,
-        letterSpacing: 0.6,
-    },
-
-    colourChevron: {
-        color: "rgba(255,255,255,0.65)",
-        fontSize: 12,
-        marginLeft: 8,
-    },
-
     joinDisabled: {
         opacity: 0.45,
     },
@@ -454,89 +354,4 @@ const styles = StyleSheet.create({
         opacity: 0.98,
     },
 
-    /* Overlay popup (non-Modal) */
-    overlayRoot: {
-        ...StyleSheet.absoluteFillObject,
-        zIndex: 50,
-    },
-
-    overlayBackdrop: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: "rgba(0,0,0,0.45)",
-    },
-
-    overlayPanel: {
-        position: "absolute",
-        width: "80%",
-        maxWidth: 320,
-        alignSelf: "center",
-        top: "42%",
-
-        borderRadius: 14,
-        paddingVertical: 14,
-        paddingHorizontal: 12,
-
-        backgroundColor: "rgba(30,30,30,0.95)",
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.14)",
-
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.25,
-        shadowRadius: 14,
-        ...(Platform.OS === "android" ? { elevation: 6 } : {}),
-    },
-
-    modalTitle: {
-        color: "rgba(255,255,255,0.92)",
-        fontSize: 14,
-        letterSpacing: 1.1,
-        marginBottom: 12,
-        textAlign: "center",
-        fontWeight: "700",
-    },
-
-    colourGrid: {
-        flexDirection: "row",
-        justifyContent: "center",
-        flexWrap: "wrap",
-        marginBottom: 10,
-    },
-
-    colourOptionWrap: {
-        width: 34,
-        height: 34,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.22)",
-        backgroundColor: "rgba(0,0,0,0.15)",
-        alignItems: "center",
-        justifyContent: "center",
-        margin: 4,
-    },
-
-    colourOptionSelected: {
-        borderWidth: 2,
-        borderColor: "rgba(255,255,255,0.95)",
-    },
-
-    colourOption: {
-        width: 24,
-        height: 24,
-        borderRadius: 7,
-    },
-
-    modalCloseButton: {
-        height: 36,
-        borderRadius: 10,
-        backgroundColor: "rgba(255,255,255,0.92)",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-
-    modalCloseText: {
-        fontSize: 15,
-        fontWeight: "800",
-        color: "#000",
-    },
 });

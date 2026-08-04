@@ -3,7 +3,7 @@ import styles from "./InteractiveMap.module.css";
 import { Player, TransportType } from "@packages/types";
 import { PlayerIcon } from "./PlayerIcon";
 import { PositionNode } from "./PositionNode";
-import { getValidMoves, TRANSPORT_COLOURS, DEFAULT_MAP_ID, MapId } from "@packages/utils";
+import { getValidMoves, TRANSPORT_COLOURS, DEFAULT_MAP_ID, MapId, TransportEdge, MapNode } from "@packages/utils";
 import { LECTURER_MUST_REVEAL_TURNS } from "@packages/utils";
 import { apiClient } from "@packages/api";
 
@@ -14,7 +14,7 @@ interface InteractiveMapProps {
     gameOver?: boolean;
     gamePin: string;
     currentPlayerId?: string;
-    currentTurn?: string;
+    currentTurn?: string | null;
     selectedTransport?: TransportType | null;
     onMove?: (destination: number, transport: TransportType) => void;
     mapId?: MapId;
@@ -141,7 +141,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
 
     const isMyTurn = !gameOver && !!currentPlayerId && currentPlayerId === currentTurn;
 
-    const MAP_NODES = useMemo(() => {
+    const MAP_NODES = useMemo<MapNode[]>(() => {
         if (!mapData) return [];
         return mapData.locations.map((loc: any) => ({
             id: loc.location,
@@ -153,7 +153,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
         }));
     }, [mapData]);
 
-    const MAP_EDGES = useMemo(() => {
+    const MAP_EDGES = useMemo<TransportEdge[]>(() => {
         if (!mapData) return [];
         return mapData.connections.map((c: any) => ({
             from: c.locationA,

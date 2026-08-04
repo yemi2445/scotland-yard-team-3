@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import styles from "../components/Welcome.module.css";
-import { ALLOWED_PLAYER_COLOURS, formatGamePin, getColourHex, isValidGamePin, PLAYER_COLOURS, PlayerColour } from "@packages/utils";
+import { formatGamePin, isValidGamePin } from "@packages/utils";
 import { apiClient } from "@packages/api";
 import { useGameState } from "@packages/providers";
 
@@ -11,13 +11,11 @@ export default function Welcome() {
 
     const [pin, setPin] = useState("");
     const [name, setName] = useState("");
-    const [colour, setColour] = useState<PlayerColour>(ALLOWED_PLAYER_COLOURS[Math.floor(Math.random() * ALLOWED_PLAYER_COLOURS.length)]);
-    const [colourOpen, setColourOpen] = useState(false);
     const [mode, setMode] = useState<"create" | "join">("create");
 
     const canJoin = useMemo(() => {
-        return isValidGamePin(pin) && name.trim() !== "" && colour.length > 0;
-    }, [pin, name, colour]);
+        return isValidGamePin(pin) && name.trim() !== "";
+    }, [pin, name]);
 
     const joinClicked = async () => {
         if (!canJoin) return;
@@ -25,8 +23,7 @@ export default function Welcome() {
         try {
             const gamePin = formatGamePin(pin).replace("-","");
 
-            // Backend v1: colour is now sent in the join payload
-            const response = await apiClient.joinGame(gamePin, name);
+            const response: any = await apiClient.joinGame(gamePin, name);
             if (!response.playerId) {
                 alert("Failed to join game — no player ID returned.");
                 return;
@@ -44,30 +41,18 @@ export default function Welcome() {
             const message = err instanceof Error ? err.message : String(err);
             const lower = message.toLowerCase();
 
-            if (lower.includes("colour") && lower.includes("taken")) {
-                alert("That colour is already taken. Please choose another.");
-                setColourOpen(true);
-                return;
-            }
-
             if (lower.includes("name") && lower.includes("taken")) {
                 alert("That name is already taken in this lobby. Please choose another.");
                 return;
             }
-            
+
             if (lower.includes("full")) {
                 alert("This lobby is full.");
                 return;
             }
-            
+
             if (lower.includes("not accepting")) {
                 alert("This game has already started.");
-                return;
-            }
-
-            if (lower.includes("invalid colour")) {
-                alert("That colour selection isn’t valid. Please choose again.");
-                setColourOpen(true);
                 return;
             }
 
@@ -127,8 +112,6 @@ export default function Welcome() {
     };
     
 
-    const selectedHex = getColourHex(colour);
-
     return (
     <div className={styles.page}>
         <div className={styles.shapes} />
@@ -146,12 +129,6 @@ export default function Welcome() {
                         <input className={styles.pin} inputMode="numeric" placeholder="000-000" value={pin} onChange={(e) => setPin(formatGamePin(e.target.value))} />
                     </>
                 )}
-
-                <button type="button" className={styles.colourChipCenter} onClick={() => setColourOpen(true)}>
-                    <span className={styles.colourSwatch} style={{ backgroundColor: selectedHex }} />
-                    <span className={styles.colourChipText}>Colour</span>
-                    <span className={styles.colourChevron}>▾</span>
-                </button>
             </div>
         </div>
 
@@ -180,30 +157,6 @@ export default function Welcome() {
                 </>
             )}
         </div>
-
-        {/* Colour picker modal */}
-        {colourOpen && (
-            <div className={styles.modalBackdrop} role="presentation" onClick={() => setColourOpen(false)}>
-                <div className={styles.modalPanel} role="dialog" onClick={(e) => e.stopPropagation()}>
-                    <div className={styles.modalTitle}>Choose a colour</div>
-                    <div className={styles.colourGrid}>
-                        {PLAYER_COLOURS.map((c) => {
-                            const selected = c.key === colour;
-                            return (
-                                <button key={c.key} type="button"
-                                    className={`${styles.colourOptionWrap} ${selected ? styles.colourOptionSelected : ""}`}
-                                    onClick={() => { setColour(c.key); setColourOpen(false); }}>
-                                    <span className={styles.colourOption} style={{ backgroundColor: c.hex }} />
-                                </button>
-                            );
-                        })}
-                    </div>
-                    <button type="button" className={styles.modalCloseButton} onClick={() => setColourOpen(false)}>
-                        Close
-                    </button>
-                </div>
-            </div>
-        )}
     </div>
 );
 }
