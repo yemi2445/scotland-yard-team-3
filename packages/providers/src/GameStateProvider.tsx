@@ -57,7 +57,13 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                                 isLecturer: p.colour?.toLowerCase() === "clear",
                                 isHost: i === 0,
                                 position: Number.isFinite(parsedLocation) ? parsedLocation : 0,
-                                tickets: { yellow: 0, green: 0, red: 0, black: 0, x2: 0 },
+                                tickets: {
+                                    yellow: typeof p.yellow === "number" ? p.yellow : 0,
+                                    green: typeof p.green === "number" ? p.green : 0,
+                                    red: typeof p.red === "number" ? p.red : 0,
+                                    black: typeof p.black === "number" ? p.black : 0,
+                                    x2: typeof p["2x"] === "number" ? p["2x"] : (typeof p.x2 === "number" ? p.x2 : 0),
+                                },
                                 isSpectator: false,
                             };
                         }),

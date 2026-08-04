@@ -33,11 +33,11 @@ export const apiClient = {
     getPlayer: (playerId: any) => makeRequest(`/players/${playerId}`),
     getMoves: (playerId: any) => makeRequest(`/players/${playerId}/moves`),
     makeMove: (playerId: any, gameId: any, ticket: any, destination: any, secondaryTransport?: any) =>
-        makeRequest(`/players/${playerId}/moves`, "POST", { gameId, ticket, destination, ...(secondaryTransport ? { secondaryTransport } : {}) }),
-    surrender: (playerId: any, gameId: any) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameId }),
+    makeRequest(`/players/${playerId}/moves`, "POST", { gameID: gameId, ticket, destination, ...(secondaryTransport ? { secondaryTransport } : {}) }),
+    surrender: (playerId: any, gameId: any) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameId: gameId }),
     // Nick's server has no dedicated leave/end-game endpoints, so both are backed by surrender —
     // the only way to remove a player's participation. "End Game (Host)" therefore only forces
     // the host's own surrender; it can't unilaterally kick every other player from the game.
-    leaveGame: (gameId: any, playerId: any) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameId }),
-    endGame: (gameId: any, playerId: any) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameId }),
+    leaveGame: (gameId: any, playerId: any) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameId: gameId }),
+    endGame: (gameId: any, playerId: any) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameId: gameId }),
 }

@@ -23,45 +23,64 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
 
     const handlePlay = async () => {
         try {
-            const gamePin = formatGamePin(pin).replace("-","");
+            const gamePin = formatGamePin(pin).replace("-", "");
 
-            const response: any = await apiClient.joinGame(gamePin, name );
-            if (!response.playerId) {
+            // Step 1: join the game
+            const joinResponse: any = await apiClient.joinGame(gamePin, name);
+            if (!joinResponse.playerId) {
                 alert("Failed to join game — no player ID returned.");
                 return;
             }
+            const playerId= String(joinResponse.playerId);
 
-            console.log("Joined game:", response.game);
+            // Step 2: Fetch full game state
+            const rawGame: any = await apiClient.getGame(gamePin);
+            const mapData: any = await apiClient.getMap(rawGame.mapId);
+            const mapName: any = mapData?.mapName ?? "Mini Map";
 
-            setGame(response.game);
-            setPlayerId(response.playerId);
+            const game: any = {
+                pin: String(rawGame.gameId),
+                mapId: rawGame.mapId,
+                mapName: mapName,
+                status: rawGame.state === "Open" ? "waiting" :
+                    rawGame.state === "Fugitive" || rawGame.state === "Detective" ? "active" : "finished",
+                currentTurn: null,
+                currentRound: rawGame.round ?? 0,
+                totalRounds: rawGame.length ?? 0,
+                winMessage: rawGame.winner !== "None" ? `${rawGame.winner} Wins!` : null,
+                travelLog: [],
+                players: (rawGame.players ?? []).map((p: any, i: number) => ({
+                    id: String(p.playerId),
+                    name: p.playerName,
+                    colour: p.colour?.toLowerCase() ?? "clear",
+                    isLecturer: p.colour?.toLowerCase() === "clear",
+                    isHost: i === 0,
+                    position: typeof p.location === "number" ? p.location : 0,
+                    tickets: {
+                        yellow: typeof p.yellow === "number" ? p.yellow : 0,
+                        green: typeof p.green === "number" ? p.green : 0,
+                        red: typeof p.red === "number" ? p.red : 0,
+                        black: typeof p.black === "number" ? p.black : 0,
+                        x2: typeof p["2x"] === "number" ? p["2x"] : 0,
+                    },
+                    isSpectator: false,
+                })),
+            };
 
-            if (response.game.status === "active") {
+            setPlayerId(playerId);
+            setGame(game);
+
+            if (game.status === "active") {
                 navigation.navigate("Play");
             } else {
-                navigation.navigate("CreateGame");
+                navigation.navigate("CreateGame")
             }
-        } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            const lower = message.toLowerCase();
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        alert(`Failed to join game: Reason: ${message}`);
+    }
+};
 
-            if (lower.includes("name") && lower.includes("taken")) {
-                alert("That name is already taken in this lobby. Please choose another.");
-                return;
-            }
-
-            if (lower.includes("full")) {
-                alert("This lobby is full.");
-                return;
-            }
-            if (lower.includes("not accepting")) {
-                alert("This game has already started.");
-                return;
-            }
-
-            alert(`Failed to join game. Reason: ${message}`);
-        }
-    };
 
    const handleCreateGame = async () => {
     try {
@@ -94,11 +113,17 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
             players: (rawGame.players ?? []).map((p: any, i: number) => ({
                 id: String(p.playerId),
                 name: p.playerName,
-                colour: p.colour?.toLowerCase() === "Clear",
-                isLecturer: p.colour?.toLowerCase() === "Clear",
-                isHOST: i === 0,
-                postion: typeof p.position === "number" ? p.position : null,
-                tickets: { yellow: 0, green: 0, red: 0, black: 0, x2: 0},
+                colour: p.colour?.toLowerCase() ?? "clear",
+                isLecturer: p.colour?.toLowerCase() === "clear",
+                isHost: i === 0,
+                position: typeof p.location === "number" ? p.location : 0,
+                tickets: {
+                    yellow: typeof p.yellow === "number" ? p.yellow : 0,
+                    green: typeof p.green === "number" ? p.green : 0,
+                    red: typeof p.red === "number" ? p.red : 0,
+                    black: typeof p.black === "number" ? p.black : 0,
+                    x2: typeof p["2x"] === "number" ? p["2x"] : 0,
+                },
                 isSpectator: false,
             })),
         };

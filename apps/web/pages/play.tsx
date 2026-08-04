@@ -72,21 +72,16 @@ export default function Play() {
         }
     }, []);
 
-    const handleSurrender = useCallback(async () => {
-        if (!game || !playerId) return;
-        try {
-            await apiClient.surrender(playerId, game.pin);
-        } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            alert(`Surrender failed: ${message}`);
-        }
-    }, [playerId, game]);
-
     const handleMove = useCallback(
         async (destination: number, transport: TransportType) => {
             if (!game || !playerId) return;
             try {
-                await apiClient.makeMove(playerId, game.pin, transport, destination, selectedSecondaryTransport ?? undefined);
+                await apiClient.makeMove(game.pin, playerId, {
+                    playerId,
+                    transport,
+                    destination,
+                    ...(selectedSecondaryTransport ? { secondaryTransport: selectedSecondaryTransport } : {}),
+                });
                 setSelectedTransport(null);
                 setSelectedSecondaryTransport(null);
             } catch (err) {
@@ -129,7 +124,7 @@ export default function Play() {
 
     {/* Turn indicator - no interaction needed */}
     <div style={{ position: "fixed", top: 0, right: 0, zIndex: 10, pointerEvents: "none" }}>
-        <TurnIndicator currentPlayerName={turnLabel} round={game.currentRound} gameOver={gameOver} winMessage={game.winMessage} />
+        <TurnIndicator currentPlayerName={currentTurnPlayer.id === playerId ? "Your" : `${currentTurnPlayer.name}'s`} round={game.currentRound} gameOver={gameOver} winMessage={game.winMessage} />
     </div>
 
     {showTransportBar && (
@@ -142,7 +137,7 @@ export default function Play() {
         pointerEvents: "all"
     }}>
         <TransportBar
-            player={activeTurnPlayer}
+            player={currentTurnPlayer}
             selectedTransport={selectedTransport}
             selectedSecondaryTransport={selectedSecondaryTransport}
             onTransportSelect={handleTransportSelect}
@@ -151,25 +146,6 @@ export default function Play() {
     </div>
 )}
 
-    {currentPlayer.isLecturer && isMyTurn && (
-    <div style={{ position: "fixed", bottom: 100, right: 20, zIndex: 100 }}>
-        <button
-            onClick={handleSurrender}
-            style={{
-                backgroundColor: "rgba(220,50,50,0.9)",
-                color: "#fff",
-                fontWeight: "800",
-                fontSize: 14,
-                padding: "10px 20px",
-                borderRadius: 10,
-                border: "2px solid #000",
-                cursor: "pointer",
-            }}
-        >
-            Surrender
-        </button>
-    </div>
-)}
     </div>
 );
 }
