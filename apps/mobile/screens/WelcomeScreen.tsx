@@ -14,6 +14,7 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
 
     const [pin, setPin] = useState("");
     const [name, setName] = useState("");
+    const [mode, setMode] = useState<"create" | "join">("create");
 
     const [fontsLoaded] = useFonts({
         Pacifico: Pacifico_400Regular,
@@ -170,27 +171,45 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
 
                         <View style={styles.middle}>
                             <View style={styles.form}>
-                                <Text style={styles.label}>Enter game pin:</Text>
-                                <TextInput value={pin} onChangeText={(text) => setPin(formatGamePin(text))} style={styles.input} keyboardType="number-pad" placeholder="000-000" placeholderTextColor="rgba(255,255,255,0.35)" maxLength={7} />
-
-                                <Text style={[styles.label, styles.labelSpacing]}>Enter your name:</Text>
+                                <Text style={styles.label}>Enter your name:</Text>
                                 <TextInput value={name} onChangeText={setName} style={styles.input} placeholder="Enter name" placeholderTextColor="rgba(255,255,255,0.35)" />
+
+                                {mode === "join" && (
+                                    <>
+                                        <Text style={[styles.label, styles.labelSpacing]}>Enter game pin:</Text>
+                                        <TextInput value={pin} onChangeText={(text) => setPin(formatGamePin(text))} style={styles.input} keyboardType="number-pad" placeholder="000-000" placeholderTextColor="rgba(255,255,255,0.35)" maxLength={7} />
+                                    </>
+                                )}
                             </View>
                         </View>
 
-                        {/* Bottom row: Instructions | Join Game | Create Game */}
+                        {/* Bottom row: Instructions | Join Game / Back | Create Game / Confirm Join */}
                         <View style={styles.bottom}>
-                            <Pressable style={({ pressed }) => [styles.bottomButton, styles.secondary, pressed && styles.pressedDown]} onPress={() => navigation.navigate("Instructions")}>
-                                <Text style={styles.bottomText}>Instructions</Text>
-                            </Pressable>
+                            {mode === "create" ? (
+                                <>
+                                    <Pressable style={({ pressed }) => [styles.bottomButton, styles.secondary, pressed && styles.pressedDown]} onPress={() => navigation.navigate("Instructions")}>
+                                        <Text style={styles.bottomText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>Instructions</Text>
+                                    </Pressable>
 
-                            <Pressable onPress={onJoin} disabled={!canJoin} style={({ pressed }) => [styles.bottomButton, styles.primary, !canJoin && styles.joinDisabled, pressed && canJoin && styles.pressedDown]}>
-                                <Text style={styles.bottomText}>Join Game</Text>
-                            </Pressable>
+                                    <Pressable style={({ pressed }) => [styles.bottomButton, styles.primary, pressed && styles.pressedDown]} onPress={() => setMode("join")}>
+                                        <Text style={styles.bottomText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>Join Game</Text>
+                                    </Pressable>
 
-                            <Pressable style={({ pressed }) => [styles.bottomButton, styles.primary, pressed && styles.pressedDown]} onPress={handleCreateGame}>
-                                <Text style={styles.bottomText}>Create Game</Text>
-                            </Pressable>
+                                    <Pressable style={({ pressed }) => [styles.bottomButton, styles.primary, pressed && styles.pressedDown]} onPress={handleCreateGame}>
+                                        <Text style={styles.bottomText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>Create Game</Text>
+                                    </Pressable>
+                                </>
+                            ) : (
+                                <>
+                                    <Pressable style={({ pressed }) => [styles.bottomButton, styles.secondary, pressed && styles.pressedDown]} onPress={() => setMode("create")}>
+                                        <Text style={styles.bottomText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>Back</Text>
+                                    </Pressable>
+
+                                    <Pressable onPress={onJoin} disabled={!canJoin} style={({ pressed }) => [styles.bottomButton, styles.primary, !canJoin && styles.joinDisabled, pressed && canJoin && styles.pressedDown]}>
+                                        <Text style={styles.bottomText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>Confirm Join</Text>
+                                    </Pressable>
+                                </>
+                            )}
                         </View>
                     </View>
                 </KeyboardAvoidingView>
@@ -234,7 +253,8 @@ const styles = StyleSheet.create({
     bottom: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between",
+        justifyContent: "center",
+        gap: 10,
         paddingBottom: 10,
         paddingHorizontal: 10,
     },
@@ -353,11 +373,13 @@ const styles = StyleSheet.create({
     },
 
     bottomButton: {
-        width: 120,
-        height: 36,
+        flex: 1,
+        minWidth: 0,
+        height: 40,
         borderRadius: 10,
         alignItems: "center",
         justifyContent: "center",
+        paddingHorizontal: 10,
     },
 
     secondary: {

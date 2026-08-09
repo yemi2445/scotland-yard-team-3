@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
-import { View, Image, StyleSheet, Animated, PanResponder, Dimensions, Platform } from "react-native";
+import { View, Image, Text, StyleSheet, Animated, PanResponder, Dimensions, Platform } from "react-native";
 import { Player, TransportType } from "@packages/types";
 import { getValidMoves, TRANSPORT_COLOURS } from "@packages/utils";
 import { LECTURER_MUST_REVEAL_TURNS } from "@packages/utils";
@@ -28,13 +28,18 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
     // the numeric mapId a game was created with — it must be fetched per-game, not bundled
     // locally, since different games can use different maps.
     const [mapData, setMapData] = useState<any>(null);
+    const [mapError, setMapError] = useState<string | null>(null);
     useEffect(() => {
         let cancelled = false;
-        if (mapId === undefined || mapId === null) return;
+        if (mapId === undefined || mapId === null) {
+            setMapError(`No mapId provided (received ${JSON.stringify(mapId)})`);
+            return;
+        }
+        setMapError(null);
         apiClient.getMap(mapId).then((data: any) => {
             if (!cancelled) setMapData(data);
         }).catch((err: any) => {
-            console.log("Failed to load map:", err);
+            if (!cancelled) setMapError(err instanceof Error ? err.message : String(err));
         });
         return () => { cancelled = true; };
     }, [mapId]);
@@ -264,7 +269,13 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
     }, [displayPlayers, isLecturer, currentRound, gameOver]);
 
     if (!mapData) {
-        return <View style={styles.container} onLayout={() => setLayoutReady(true)} />;
+        return (
+            <View style={styles.container} onLayout={() => setLayoutReady(true)}>
+                <View style={styles.statusWrap}>
+                    <Text style={styles.statusText}>{mapError ? `Map failed to load:\n${mapError}` : "Loading map…"}</Text>
+                </View>
+            </View>
+        );
     }
 
     return (
@@ -309,6 +320,17 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#1a1a1a",
         overflow: "hidden",
+    },
+    statusWrap: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+    },
+    statusText: {
+        color: "rgba(255,255,255,0.7)",
+        fontSize: 14,
+        textAlign: "center",
     },
     pickerBackdrop: {
         flex: 1,
