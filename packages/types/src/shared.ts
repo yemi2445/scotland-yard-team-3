@@ -13,7 +13,7 @@ export interface Game {
     travelLog: TravelLogEntry[];
 }
 
-export type TransportType = "bike" | "taxi" | "bus" | "black" | "x2";
+export type TransportType = "yellow" | "green" | "red" | "black" | "x2";
 
 export interface Player {
     id: string;

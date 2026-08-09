@@ -6,12 +6,12 @@ export const TransportIcon: React.FC<{ type: string; className?: string; size?: 
     const iconProps = { size, color: colour };
 
     switch (type as TransportType) {
-        case "bike":
-            return <MaterialIcons name="directions-bike" {...iconProps} />;
-        case "taxi":
+        case "yellow":
             return <MaterialIcons name="local-taxi" {...iconProps} />;
-        case "bus":
+        case "green":
             return <MaterialIcons name="directions-bus" {...iconProps} />;
+        case "red":
+            return <MaterialIcons name="directions-subway" {...iconProps} />;
         case "black":
             return <MaterialIcons name="help-outline" {...iconProps} />;
         case "x2":

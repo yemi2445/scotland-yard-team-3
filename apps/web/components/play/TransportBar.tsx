@@ -7,12 +7,11 @@ import { TransportIcon } from "./TransportIcons";
 interface TransportBarProps {
     player: Player;
     selectedTransport?: TransportType | null;
-    selectedSecondaryTransport?: TransportType | null;
     onTransportSelect?: (t: TransportType) => void;
     isMyTurn?: boolean;
 }
 
-export const TransportBar: React.FC<TransportBarProps> = ({ player, selectedTransport, selectedSecondaryTransport, onTransportSelect, isMyTurn = false }) => {
+export const TransportBar: React.FC<TransportBarProps> = ({ player, selectedTransport, onTransportSelect, isMyTurn = false }) => {
     const entries = Object.entries(player.tickets).sort(sortTransports);
     const normalEntries = entries.filter(([type]) => !SECONDARY_TRANSPORTS.includes(type));
     const secondaryEntries = entries.filter(([type]) => SECONDARY_TRANSPORTS.includes(type));
@@ -20,7 +19,7 @@ export const TransportBar: React.FC<TransportBarProps> = ({ player, selectedTran
     const renderEntry = ([type, count]: [string, number]) => {
         const transport = type as TransportType;
         const isDisabled = count === 0;
-        const isSelected = selectedTransport === transport || selectedSecondaryTransport === transport;
+        const isSelected = selectedTransport === transport;
         const colour = TRANSPORT_COLOURS[transport] ?? "#ffffff";
         const classes = [
             styles.ticket,

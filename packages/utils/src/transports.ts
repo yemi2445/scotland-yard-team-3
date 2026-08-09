@@ -1,15 +1,15 @@
 import { TransportType } from "@packages/types";
 
-export const TRANSPORT_ORDER = ["bike", "taxi", "bus", "black", "x2"];
+export const TRANSPORT_ORDER = ["yellow", "green", "red", "black", "x2"];
 export const SECONDARY_TRANSPORTS = ["black", "x2"];
 export const sortTransports = (a: [string, number], b: [string, number]): number => {
     return TRANSPORT_ORDER.indexOf(a[0]) - TRANSPORT_ORDER.indexOf(b[0]);
 };
 
 export const TRANSPORT_COLOURS: Record<TransportType, string> = {
-    taxi: "#ffd700",
-    bus: "#32cd32",
-    bike: "#1e90ff",
+    yellow: "#ffd700",
+    green: "#32cd32",
+    red: "#e63946",
     black: "#aaaaaa",
     x2: "#00aaff",
 }

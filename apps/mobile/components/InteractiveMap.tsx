@@ -1,11 +1,10 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { View, Image, StyleSheet, Animated, PanResponder, Dimensions, Platform } from "react-native";
 import { Player, TransportType } from "@packages/types";
-import { getValidMoves, TRANSPORT_COLOURS, getMapById, DEFAULT_MAP_ID, MapId } from "@packages/utils";
+import { getValidMoves, TRANSPORT_COLOURS } from "@packages/utils";
 import { LECTURER_MUST_REVEAL_TURNS } from "@packages/utils";
 import { PositionNode } from "./PositionNode";
 import { PlayerIcon } from "./PlayerIcon";
-import { MAP_IMAGES } from "@packages/assets";
 import { apiClient } from "@packages/api";
 
 interface InteractiveMapProps {
@@ -18,18 +17,60 @@ interface InteractiveMapProps {
     currentTurn?: string | null;
     selectedTransport?: TransportType | null;
     onMove?: (destination: number, transport: TransportType) => void;
-    mapId?: MapId;
+    mapId?: any;
 }
 
-export default function InteractiveMap({ players = [], currentRound = 1, isLecturer = false, gameOver = false, gamePin, currentPlayerId, currentTurn, selectedTransport = null, onMove, mapId = DEFAULT_MAP_ID }: InteractiveMapProps) {
+export default function InteractiveMap({ players = [], currentRound = 1, isLecturer = false, gameOver = false, gamePin, currentPlayerId, currentTurn, selectedTransport = null, onMove, mapId }: InteractiveMapProps) {
     const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
     const displayPlayers = players.filter(p => !p.isSpectator && p.position !== 0);
 
-    const mapDefinition = useMemo(() => getMapById(mapId), [mapId]);
-    const MAP_ORIGINAL_WIDTH = mapDefinition.dimensions.width;
-    const MAP_ORIGINAL_HEIGHT = mapDefinition.dimensions.height;
-    const MAP_NODES = mapDefinition.nodes.nodes;
-    const MAP_EDGES = mapDefinition.nodes.edges;
+    // The map layout (image, node coordinates, connections) lives on the game server, keyed by
+    // the numeric mapId a game was created with — it must be fetched per-game, not bundled
+    // locally, since different games can use different maps.
+    const [mapData, setMapData] = useState<any>(null);
+    useEffect(() => {
+        let cancelled = false;
+        if (mapId === undefined || mapId === null) return;
+        apiClient.getMap(mapId).then((data: any) => {
+            if (!cancelled) setMapData(data);
+        }).catch((err: any) => {
+            console.log("Failed to load map:", err);
+        });
+        return () => { cancelled = true; };
+    }, [mapId]);
+
+    const MAP_ORIGINAL_WIDTH = mapData?.mapWidth ?? 1;
+    const MAP_ORIGINAL_HEIGHT = mapData?.mapHeight ?? 1;
+
+    const MAP_NODES = useMemo(() => {
+        if (!mapData) return [] as { id: number; x: number; y: number; transports: TransportType[] }[];
+        // Some map datasets contain duplicate location ids — keep only the first occurrence so
+        // every node stays individually addressable and clickable.
+        const seen = new Set<number>();
+        const nodes: { id: number; x: number; y: number; transports: TransportType[] }[] = [];
+        for (const loc of mapData.locations) {
+            if (seen.has(loc.location)) continue;
+            seen.add(loc.location);
+            nodes.push({
+                id: loc.location,
+                x: (loc.xPos / mapData.mapWidth) * 100,
+                y: (loc.yPos / mapData.mapHeight) * 100,
+                transports: mapData.connections
+                    .filter((c: any) => c.locationA === loc.location || c.locationB === loc.location)
+                    .map((c: any) => c.ticket.toLowerCase()),
+            });
+        }
+        return nodes;
+    }, [mapData]);
+
+    const MAP_EDGES = useMemo<{ from: number; to: number; type: TransportType }[]>(() => {
+        if (!mapData) return [];
+        return mapData.connections.map((c: any) => ({
+            from: c.locationA,
+            to: c.locationB,
+            type: c.ticket.toLowerCase() as TransportType,
+        }));
+    }, [mapData]);
 
     const [layoutReady, setLayoutReady] = useState(false);
 
@@ -47,14 +88,9 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
     const isMyTurn = !gameOver && !!currentPlayerId && currentPlayerId === currentTurn;
 
     const validMoves = useMemo(() => {
-        if (!isMyTurn || !currentPlayerObj) return new Map<number, TransportType[]>();
-        const moves = getValidMoves(mapDefinition.nodes, currentPlayerObj.position, currentPlayerObj.tickets, players);
-        console.log("Valid moves:", moves);
-        if (!moves || moves.size === 0) {
-            console.log("[InteractiveMap] No valid moves found");
-        }
-        return moves;
-    }, [isMyTurn, currentPlayerObj, players, gamePin, currentPlayerId]);
+        if (!isMyTurn || !currentPlayerObj || !mapData) return new Map<number, TransportType[]>();
+        return getValidMoves({ nodes: MAP_NODES, edges: MAP_EDGES }, currentPlayerObj.position, currentPlayerObj.tickets, players);
+    }, [isMyTurn, currentPlayerObj, players, MAP_NODES, MAP_EDGES, mapData]);
 
     const filteredValidMoves = useMemo(() => {
         if (!selectedTransport || !isMyTurn) return new Map<number, TransportType[]>();
@@ -129,7 +165,7 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
     };
 
     useEffect(() => {
-        if (!layoutReady) return;
+        if (!layoutReady || !mapData) return;
 
         const initialScale = screenWidth / MAP_ORIGINAL_WIDTH;
         scale.setValue(initialScale);
@@ -143,7 +179,7 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
 
         last.current.x = initialX;
         last.current.y = initialY;
-    }, [layoutReady]);
+    }, [layoutReady, mapData]);
 
     const handleNodePress = useCallback((nodeId: number) => {
             if (!isMyTurn || !onMove) return;
@@ -169,7 +205,7 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
             deg[edge.to] = (deg[edge.to] || 0) + 1;
         });
         return deg;
-    }, [mapId]);
+    }, [MAP_EDGES]);
 
     const edgeViews = useMemo(() => {
         return MAP_EDGES.map((edge) => {
@@ -227,6 +263,10 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
         return groups;
     }, [displayPlayers, isLecturer, currentRound, gameOver]);
 
+    if (!mapData) {
+        return <View style={styles.container} onLayout={() => setLayoutReady(true)} />;
+    }
+
     return (
         <View style={styles.container} onLayout={() => setLayoutReady(true)} {...(Platform.OS === "web" ? { onWheel: handleWheel as any } : {})}>
             <Animated.View
@@ -237,17 +277,19 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
                     height: MAP_ORIGINAL_HEIGHT,
                 }}
             >
-                <Image source={MAP_IMAGES[mapDefinition.id]} style={{ width: MAP_ORIGINAL_WIDTH, height: MAP_ORIGINAL_HEIGHT }} resizeMode="contain" />
+                <Image source={{ uri: mapData.mapImage }} style={{ width: MAP_ORIGINAL_WIDTH, height: MAP_ORIGINAL_HEIGHT }} resizeMode="contain" />
 
                 {/* Edge lines */}
                 {edgeViews}
 
-                {/* Position nodes */}
+                {/* Position nodes. Size is bumped well above the 24px default: on large maps the
+                    initial fit-to-screen scale is tiny, so a bigger base size keeps nodes visible
+                    and tappable without needing per-frame zoom-compensated sizing. */}
                 {MAP_NODES.map((node) => {
                     let highlight: "selected" | "pending" | "inspected" | "hovered" | "none" = "none";
                     if (currentPlayerObj && node.id === currentPlayerObj.position) highlight = "inspected";
                     else if (isMyTurn && filteredValidMoves.has(node.id)) highlight = "pending";
-                    return <PositionNode key={node.id} label={node.id} transports={node.transports} x={node.x} y={node.y} highlight={highlight} onPress={() => handleNodePress(node.id)} />;
+                    return <PositionNode key={node.id} label={node.id} transports={node.transports} x={node.x} y={node.y} size={40} highlight={highlight} onPress={() => handleNodePress(node.id)} />;
                 })}
 
                 {/* Player icons */}

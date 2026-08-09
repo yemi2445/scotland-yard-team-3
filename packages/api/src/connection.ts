@@ -32,8 +32,11 @@ export const apiClient = {
     startGame: (gameId: any, playerId: any) => makeRequest(`/games/${gameId}/start/${playerId}`, "PATCH"),
     getPlayer: (playerId: any) => makeRequest(`/players/${playerId}`),
     getMoves: (playerId: any) => makeRequest(`/players/${playerId}/moves`),
-    makeMove: (playerId: any, gameId: any, ticket: any, destination: any, secondaryTransport?: any) =>
-    makeRequest(`/players/${playerId}/moves`, "POST", { gameID: gameId, ticket, destination, ...(secondaryTransport ? { secondaryTransport } : {}) }),
+    // x2 has no destination of its own; it must be submitted as its own standalone move (any
+    // destination, typically the player's current position) before the two ticket moves it
+    // unlocks — the server has no field for combining it with another ticket in one request.
+    makeMove: (playerId: any, gameId: any, ticket: any, destination: any) =>
+    makeRequest(`/players/${playerId}/moves`, "POST", { gameID: gameId, ticket, destination }),
     surrender: (playerId: any, gameId: any) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameId: gameId }),
     // Nick's server has no dedicated leave/end-game endpoints, so both are backed by surrender —
     // the only way to remove a player's participation. "End Game (Host)" therefore only forces

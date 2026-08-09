@@ -8,14 +8,12 @@ import { TurnIndicator } from "@/components/play/TurnIndicator";
 import EscapeMenu from "@/components/EscapeMenu";
 import { apiClient } from "@packages/api";
 import { TransportType } from "@packages/types";
-import { SECONDARY_TRANSPORTS } from "@packages/utils";
 
 export default function Play() {
     const router = useRouter();
-    const { game, playerId } = useGameState();
+    const { game, playerId, setGame } = useGameState();
     const [shownWinMessage, setShownWinMessage] = useState(false);
     const [selectedTransport, setSelectedTransport] = useState<TransportType | null>(null);
-    const [selectedSecondaryTransport, setSelectedSecondaryTransport] = useState<TransportType | null>(null);
 
     useEffect(() => {
         if (!game || !playerId) {
@@ -48,7 +46,6 @@ export default function Play() {
     useEffect(() => {
         if (!isMyTurn) {
             setSelectedTransport(null);
-            setSelectedSecondaryTransport(null);
         }
     }, [isMyTurn]);
 
@@ -64,32 +61,61 @@ export default function Play() {
     }, [gameOver, game?.winMessage, shownWinMessage, currentPlayer]);    
 
 
-    const handleTransportSelect = useCallback((t: TransportType) => {
-        if (SECONDARY_TRANSPORTS.includes(t)) {
-            setSelectedSecondaryTransport((prev) => (prev === t ? null : t));
-        } else {
-            setSelectedTransport((prev) => (prev === t ? null : t));
+    const handleSurrender = useCallback(async () => {
+        if (!game || !playerId) return;
+        try {
+            await apiClient.surrender(playerId, game.pin);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            alert(`Surrender failed: ${message}`);
         }
-    }, []);
+    }, [playerId, game]);
+
+    // x2 has no destination of its own — playing it (at the player's current position) keeps
+    // the turn active so the next two ordinary ticket moves can be played, per the game rules.
+    // It must be submitted as its own standalone move; the server has no way to combine it with
+    // another ticket in a single request.
+    const handleX2 = useCallback(async () => {
+        if (!game || !playerId || !currentPlayer) return;
+        try {
+            await apiClient.makeMove(playerId, game.pin, "x2", currentPlayer.position);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            alert(`x2 failed: ${message}`);
+        }
+    }, [game, playerId, currentPlayer]);
+
+    const handleTransportSelect = useCallback(
+        (t: TransportType) => {
+            if (t === "x2") {
+                void handleX2();
+                return;
+            }
+            setSelectedTransport((prev) => (prev === t ? null : t));
+        },
+        [handleX2]
+    );
 
     const handleMove = useCallback(
         async (destination: number, transport: TransportType) => {
             if (!game || !playerId) return;
             try {
-                await apiClient.makeMove(game.pin, playerId, {
-                    playerId,
-                    transport,
-                    destination,
-                    ...(selectedSecondaryTransport ? { secondaryTransport: selectedSecondaryTransport } : {}),
-                });
+                const response: any = await apiClient.makeMove(playerId, game.pin, transport, destination);
+                // The server masks our own location outside reveal rounds, so subsequent polls
+                // won't reflect this move's new position — apply it locally right away.
+                const newPosition = typeof response?.location === "number" ? response.location : destination;
+                setGame((prev) =>
+                    prev
+                        ? { ...prev, players: prev.players.map((p) => (p.id === playerId ? { ...p, position: newPosition } : p)) }
+                        : prev
+                );
                 setSelectedTransport(null);
-                setSelectedSecondaryTransport(null);
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);
                 alert(`Move failed: ${message}`);
             }
         },
-        [game, playerId, selectedSecondaryTransport]
+        [game, playerId, setGame]
     );
 
     if (!game || !playerId || !currentPlayer || !activeTurnPlayer) return null;
@@ -124,7 +150,7 @@ export default function Play() {
 
     {/* Turn indicator - no interaction needed */}
     <div style={{ position: "fixed", top: 0, right: 0, zIndex: 10, pointerEvents: "none" }}>
-        <TurnIndicator currentPlayerName={currentTurnPlayer.id === playerId ? "Your" : `${currentTurnPlayer.name}'s`} round={game.currentRound} gameOver={gameOver} winMessage={game.winMessage} />
+        <TurnIndicator currentPlayerName={turnLabel} round={game.currentRound} gameOver={gameOver} winMessage={game.winMessage} />
     </div>
 
     {showTransportBar && (
@@ -137,12 +163,31 @@ export default function Play() {
         pointerEvents: "all"
     }}>
         <TransportBar
-            player={currentTurnPlayer}
+            player={activeTurnPlayer}
             selectedTransport={selectedTransport}
-            selectedSecondaryTransport={selectedSecondaryTransport}
             onTransportSelect={handleTransportSelect}
             isMyTurn={isMyTurn}
         />
+    </div>
+)}
+
+    {currentPlayer.isLecturer && isMyTurn && (
+    <div style={{ position: "fixed", bottom: 100, right: 20, zIndex: 100 }}>
+        <button
+            onClick={handleSurrender}
+            style={{
+                backgroundColor: "rgba(220,50,50,0.9)",
+                color: "#fff",
+                fontWeight: "800",
+                fontSize: 14,
+                padding: "10px 20px",
+                borderRadius: 10,
+                border: "2px solid #000",
+                cursor: "pointer",
+            }}
+        >
+            Surrender
+        </button>
     </div>
 )}
 

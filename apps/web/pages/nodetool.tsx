@@ -21,7 +21,7 @@ interface ConnectionData {
 
 type Mode = "add" | "connect" | "move";
 
-const LINKABLE_TRANSPORTS: TransportType[] = ["taxi", "bus", "bike"];
+const LINKABLE_TRANSPORTS: TransportType[] = ["yellow", "green", "red"];
 
 interface PendingLink {
     fromId: number;
@@ -34,7 +34,7 @@ export default function NodeTool() {
     const [connections, setConnections] = useState<ConnectionData[]>([]);
 
     const [mode, setMode] = useState<Mode>("add");
-    const [selectedTransport, setSelectedTransport] = useState<TransportType>("taxi");
+    const [selectedTransport, setSelectedTransport] = useState<TransportType>("yellow");
     const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
     const [inspectedNodeId, setInspectedNodeId] = useState<number | null>(null);
     const [pendingLink, setPendingLink] = useState<PendingLink | null>(null);
@@ -258,9 +258,9 @@ export default function NodeTool() {
                     <div>
                         <strong>Transport: </strong>
                         <select value={selectedTransport} onChange={(e) => setSelectedTransport(e.target.value as TransportType)}>
-                            <option value="taxi">Taxi (Yellow)</option>
-                            <option value="bus">Bus (Green)</option>
-                            <option value="bike">Bike (Blue)</option>
+                            <option value="yellow">Taxi (Yellow)</option>
+                            <option value="green">Bus (Green)</option>
+                            <option value="red">Underground (Red)</option>
                         </select>
                     </div>
                 )}

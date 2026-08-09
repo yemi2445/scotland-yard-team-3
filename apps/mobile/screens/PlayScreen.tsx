@@ -11,13 +11,11 @@ import InteractiveMap from "../components/InteractiveMap";
 import EscapeMenuOverlay from "../components/EscapeMenuOverlay";
 import { useGameState } from "@packages/providers";
 import { apiClient } from "@packages/api";
-import { SECONDARY_TRANSPORTS } from "@packages/utils";
 
 export default function PlayScreen({ navigation }: NavigationProps) {
     const { game, playerId } = useGameState();
     const [shownWinMessage, setShownWinMessage] = useState(false);
     const [selectedTransport, setSelectedTransport] = useState<TransportType | null>(null);
-    const [selectedSecondaryTransport, setSelectedSecondaryTransport] = useState<TransportType | null>(null);
 
     useEffect(() => {
         if (!game || !playerId) {
@@ -42,10 +40,14 @@ export default function PlayScreen({ navigation }: NavigationProps) {
 
     const isMyTurn = !gameOver && !!currentPlayer && currentPlayer.id === game?.currentTurn;
 
+    // currentTurnPlayer is null whenever nobody specific can be identified as "it" from this
+    // viewer's perspective (e.g. the Fugitive's client during the Detective phase, since any
+    // detective may act). Fall back to the viewer's own player so the bar/label still render.
+    const activeTurnPlayer = currentTurnPlayer ?? currentPlayer ?? null;
+
     useEffect(() => {
         if (!isMyTurn) {
             setSelectedTransport(null);
-            setSelectedSecondaryTransport(null);
         }
     }, [isMyTurn]);
 
@@ -60,13 +62,30 @@ export default function PlayScreen({ navigation }: NavigationProps) {
         }
     }, [gameOver, game?.winMessage, shownWinMessage, currentPlayer]);
 
-    const handleTransportSelect = useCallback((t: TransportType) => {
-        if (SECONDARY_TRANSPORTS.includes(t)) {
-            setSelectedSecondaryTransport((prev) => (prev === t ? null : t));
-        } else {
-            setSelectedTransport((prev) => (prev === t ? null : t));
+    // x2 has no destination of its own — playing it (at the player's current position) keeps
+    // the turn active so the next two ordinary ticket moves can be played, per the game rules.
+    // It must be submitted as its own standalone move; the server has no way to combine it with
+    // another ticket in a single request.
+    const handleX2 = useCallback(async () => {
+        if (!game || !playerId || !currentPlayer) return;
+        try {
+            await apiClient.makeMove(playerId, game.pin, "x2", currentPlayer.position);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            alert(`x2 failed: ${message}`);
         }
-    }, []);
+    }, [game, playerId, currentPlayer]);
+
+    const handleTransportSelect = useCallback(
+        (t: TransportType) => {
+            if (t === "x2") {
+                void handleX2();
+                return;
+            }
+            setSelectedTransport((prev) => (prev === t ? null : t));
+        },
+        [handleX2]
+    );
 
     const handleSurrender = useCallback(async () => {
         if (!game || !playerId) return;
@@ -84,18 +103,22 @@ export default function PlayScreen({ navigation }: NavigationProps) {
             try {
                 await apiClient.makeMove(playerId, game.pin, transport, destination);
                 setSelectedTransport(null);
-                setSelectedSecondaryTransport(null);
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);
                 alert(`Move failed: ${message}`);
             }
         },
-        [game, playerId, selectedSecondaryTransport]
+        [game, playerId]
     );
 
-    if (!game || !playerId || !currentPlayer || !currentTurnPlayer) return null;
+    if (!game || !playerId || !currentPlayer || !activeTurnPlayer) return null;
 
-    const showTransportBar = !(currentTurnPlayer.isLecturer && !currentPlayer.isLecturer);
+    const showTransportBar = !(activeTurnPlayer.isLecturer && !currentPlayer.isLecturer);
+    const turnLabel = currentTurnPlayer
+        ? currentTurnPlayer.id === playerId
+            ? "Your"
+            : `${currentTurnPlayer.name}'s`
+        : "Detectives'";
 
     return (
         <View style={styles.container}>
@@ -114,12 +137,11 @@ export default function PlayScreen({ navigation }: NavigationProps) {
                     mapId={game.mapId}
                 />
                 <TravelLog logs={game.travelLog} isLecturer={currentPlayer.isLecturer} gameOver={gameOver} totalRounds={game.totalRounds} />
-                <TurnIndicator currentPlayerName={currentTurnPlayer.id === playerId ? "Your" : `${currentTurnPlayer.name}'s`} round={game.currentRound} gameOver={gameOver} winMessage={game.winMessage} />
+                <TurnIndicator currentPlayerName={turnLabel} round={game.currentRound} gameOver={gameOver} winMessage={game.winMessage} />
                 {showTransportBar && (
                     <TransportBar
-                        player={currentTurnPlayer}
+                        player={activeTurnPlayer}
                         selectedTransport={selectedTransport}
-                        selectedSecondaryTransport={selectedSecondaryTransport}
                         onTransportSelect={handleTransportSelect}
                         isMyTurn={isMyTurn}
                     />

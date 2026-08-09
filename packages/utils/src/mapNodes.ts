@@ -35,11 +35,11 @@ export function doesEdgeExist(mapData: MapData, from: number, to: number, transp
 
 export function getValidMoves(mapData: MapData, playerPosition: number, tickets: Record<TransportType, number>, players: Player[]): Map<number, TransportType[]> {
     const moves = new Map<number, TransportType[]>();
+    // Black tickets work on any connection regardless of its real transport type (there is no
+    // edge literally typed "black" in the map data), so every adjacent edge is black-eligible.
+    const hasBlack = (tickets.black ?? 0) > 0;
 
     for (const edge of mapData.edges) {
-        const transport = edge.type;
-        if (!tickets[transport] || tickets[transport] <= 0) continue;
-
         let dest: number | null = null;
         if (edge.from === playerPosition) {
             dest = edge.to;
@@ -54,8 +54,9 @@ export function getValidMoves(mapData: MapData, playerPosition: number, tickets:
         if (occupiedByPlayer) continue;
 
         const usable = moves.get(dest) ?? [];
-        if (!usable.includes(transport)) usable.push(transport);
-        moves.set(dest, usable);
+        if ((tickets[edge.type] ?? 0) > 0 && !usable.includes(edge.type)) usable.push(edge.type);
+        if (hasBlack && !usable.includes("black")) usable.push("black");
+        if (usable.length > 0) moves.set(dest, usable);
     }
 
     return moves;

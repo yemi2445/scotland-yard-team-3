@@ -24,6 +24,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const poll = async () => {
             try {
                 const rawGame: any = await apiClient.getGame(game.pin);
+                // GET /games/{gameId} never includes ticket counts (only GET /players/{playerId}
+                // does), and it also always masks the fugitive's own location outside reveal
+                // rounds — even for the fugitive's own client. Fetch our own player record
+                // separately so we have real ticket counts and can fall back to our last known
+                // true position when the game endpoint reports it as hidden.
+                const self: any = playerId ? await apiClient.getPlayer(playerId).catch(() => null) : null;
 
                 if (!cancelled) {
                     // Nick's server only exposes a coarse "Fugitive" / "Detective" phase, not a
@@ -49,7 +55,9 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                         winMessage: rawGame.winner !== "None" ? `${rawGame.winner} wins!` : undefined,
                         travelLog: [],
                         players: (rawGame.players ?? []).map((p: any, i: number) => {
-                            const parsedLocation = Number(p.location);
+                            const isSelf = String(p.playerId) === playerId;
+                            const ticketSource = isSelf && self ? self : p;
+                            const parsedLocation = Number(isSelf && self ? self.location : p.location);
                             return {
                                 id: String(p.playerId),
                                 name: p.playerName,
@@ -58,11 +66,11 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                                 isHost: i === 0,
                                 position: Number.isFinite(parsedLocation) ? parsedLocation : 0,
                                 tickets: {
-                                    yellow: typeof p.yellow === "number" ? p.yellow : 0,
-                                    green: typeof p.green === "number" ? p.green : 0,
-                                    red: typeof p.red === "number" ? p.red : 0,
-                                    black: typeof p.black === "number" ? p.black : 0,
-                                    x2: typeof p["2x"] === "number" ? p["2x"] : (typeof p.x2 === "number" ? p.x2 : 0),
+                                    yellow: typeof ticketSource.yellow === "number" ? ticketSource.yellow : 0,
+                                    green: typeof ticketSource.green === "number" ? ticketSource.green : 0,
+                                    red: typeof ticketSource.red === "number" ? ticketSource.red : 0,
+                                    black: typeof ticketSource.black === "number" ? ticketSource.black : 0,
+                                    x2: typeof ticketSource["2x"] === "number" ? ticketSource["2x"] : (typeof ticketSource.x2 === "number" ? ticketSource.x2 : 0),
                                 },
                                 isSpectator: false,
                             };
@@ -73,11 +81,19 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                         const mappedWithName = {
                             ...mapped,
                             mapName: prevGame?.mapName ?? "Mini Map",
+                            // The server masks our own location outside reveal rounds (position
+                            // comes back as 0/unparseable). Fall back to the last position we
+                            // actually knew, rather than losing track of where we are.
+                            players: mapped.players.map((p: Player) => {
+                                if (p.position !== 0 || p.id !== playerId) return p;
+                                const prevSelf = prevGame?.players.find((pp: Player) => pp.id === playerId);
+                                return prevSelf && prevSelf.position !== 0 ? { ...p, position: prevSelf.position } : p;
+                            }),
                         };
                         if (JSON.stringify(prevGame) != JSON.stringify(mappedWithName)) {
                             return mappedWithName;
                         }
-                        return prevGame;    
+                        return prevGame;
                     });
                 }
 

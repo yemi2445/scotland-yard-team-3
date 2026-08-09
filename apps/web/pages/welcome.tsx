@@ -29,10 +29,44 @@ export default function Welcome() {
                 return;
             }
 
-            setGame(response.game);
-            setPlayerId(response.playerId);
+            const playerId = String(response.playerId);
+            const rawGame: any = await apiClient.getGame(gamePin);
+            const mapData: any = await apiClient.getMap(rawGame.mapId);
 
-            if (response.game.status == "active") {
+            const game: any = {
+                pin: String(rawGame.gameId),
+                mapId: rawGame.mapId,
+                mapName: mapData?.mapName ?? "Mini Map",
+                status: rawGame.state === "Open" ? "waiting" : rawGame.state === "Fugitive" || rawGame.state === "Detective" ? "active" : "finished",
+                currentTurn: null,
+                currentRound: rawGame.round ?? 0,
+                totalRounds: rawGame.length ?? 0,
+                winMessage: null,
+                travelLog: [],
+                players: (rawGame.players ?? []).map((p: any, i: number) => {
+                    // The server masks our own (fugitive) location outside reveal rounds, even
+                    // right after we've just joined. startLocation from the join response is the
+                    // only place our true starting position is ever exposed.
+                    const parsedLocation = Number(p.location);
+                    const isSelf = String(p.playerId) === playerId;
+                    const fallback = isSelf && typeof response.startLocation === "number" ? response.startLocation : 0;
+                    return {
+                        id: String(p.playerId),
+                        name: p.playerName,
+                        colour: p.colour?.toLowerCase() ?? "clear",
+                        isLecturer: p.colour?.toLowerCase() === "clear",
+                        isHost: i === 0,
+                        position: Number.isFinite(parsedLocation) ? parsedLocation : fallback,
+                        tickets: { yellow: 0, green: 0, red: 0, black: 0, x2: 0 },
+                        isSpectator: false,
+                    };
+                }),
+            };
+
+            setPlayerId(playerId);
+            setGame(game);
+
+            if (game.status === "active") {
                 router.push("/play");
             } else {
                 router.push("/creategame");
@@ -89,16 +123,24 @@ export default function Welcome() {
                 totalRounds: rawGame.length ?? 0,
                 winMessage: null,
                 travelLog: [],
-                players: (rawGame.players ?? []).map((p: any, i: number) => ({
-                    id: String(p.playerId),
-                    name: p.playerName,
-                    colour: p.colour?.toLowerCase() ?? "clear",
-                    isLecturer: p.colour?.toLowerCase() === "clear",
-                    isHost: i === 0,
-                    position: typeof p.location === "number" ? p.location : 0,
-                    tickets: { yellow: 0, green: 0, red: 0, black: 0, x2: 0 },
-                    isSpectator: false,
-            })),
+                players: (rawGame.players ?? []).map((p: any, i: number) => {
+                    // The server masks the fugitive's own location outside reveal rounds, even
+                    // right after joining. startLocation from the join response is the only
+                    // place our true starting position is ever exposed.
+                    const parsedLocation = Number(p.location);
+                    const isSelf = String(p.playerId) === playerId;
+                    const fallback = isSelf && typeof joinResponse.startLocation === "number" ? joinResponse.startLocation : 0;
+                    return {
+                        id: String(p.playerId),
+                        name: p.playerName,
+                        colour: p.colour?.toLowerCase() ?? "clear",
+                        isLecturer: p.colour?.toLowerCase() === "clear",
+                        isHost: i === 0,
+                        position: Number.isFinite(parsedLocation) ? parsedLocation : fallback,
+                        tickets: { yellow: 0, green: 0, red: 0, black: 0, x2: 0 },
+                        isSpectator: false,
+                    };
+            }),
         };
 
         setPlayerId(playerId);

@@ -143,15 +143,30 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
 
     const MAP_NODES = useMemo<MapNode[]>(() => {
         if (!mapData) return [];
-        return mapData.locations.map((loc: any) => ({
-            id: loc.location,
-            x: (loc.xPos / mapData.mapWidth) * 100,
-            y: (loc.yPos / mapData.mapHeight) * 100,
-            transports: mapData.connections
-                .filter((c: any) => c.locationA === loc.location || c.locationB === loc.location)
-                .map((c: any) => c.ticket.toLowerCase()),
-        }));
+        // Some map datasets (e.g. server map 567) contain duplicate location ids.
+        // Keep only the first occurrence so React keys stay unique and every node is clickable.
+        const seen = new Set<number>();
+        const nodes: MapNode[] = [];
+        for (const loc of mapData.locations) {
+            if (seen.has(loc.location)) continue;
+            seen.add(loc.location);
+            nodes.push({
+                id: loc.location,
+                x: (loc.xPos / mapData.mapWidth) * 100,
+                y: (loc.yPos / mapData.mapHeight) * 100,
+                transports: mapData.connections
+                    .filter((c: any) => c.locationA === loc.location || c.locationB === loc.location)
+                    .map((c: any) => c.ticket.toLowerCase()),
+            });
+        }
+        return nodes;
     }, [mapData]);
+
+    const nodesById = useMemo(() => {
+        const map = new Map<number, MapNode>();
+        MAP_NODES.forEach((n) => map.set(n.id, n));
+        return map;
+    }, [MAP_NODES]);
 
     const MAP_EDGES = useMemo<TransportEdge[]>(() => {
         if (!mapData) return [];
@@ -225,8 +240,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
     // Early return AFTER all hooks
     if (!mapData) return <div className={styles.mapContainer} />;
 
-    console.log("imgDims:", imgDims, "containerDims:", containerDims, "scale:", scale);
-
     const handleMouseDown = (e: React.MouseEvent) => {
         setIsDragging(true);
         wasDraggingRef.current = false;
@@ -274,7 +287,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
                     height: imgDims.height,
                 }}
             >
-                <img ref={imgRef} src="/leeds_center_map.png"  alt="Game Map" className={styles.mapImage} onLoad={handleImageLoad} draggable={false} />
+                <img ref={imgRef} src={mapData.mapImage} alt="Game Map" className={styles.mapImage} onLoad={handleImageLoad} draggable={false} />
                 {imgDims.width > 0 && (
                     <>
                         <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
@@ -287,8 +300,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
                                 </filter>
                             </defs>
                             {MAP_EDGES.map((edge) => {
-                                const fromNode = MAP_NODES.find((n) => n.id === edge.from);
-                                const toNode = MAP_NODES.find((n) => n.id === edge.to);
+                                const fromNode = nodesById.get(edge.from);
+                                const toNode = nodesById.get(edge.to);
                                 if (!fromNode || !toNode) return null;
                                 const isMulti = (nodeDegrees[edge.from] || 0) > 2 || (nodeDegrees[edge.to] || 0) > 2;
                                 const highlight = (isMyTurn && !!selectedTransport && edge.type === selectedTransport && edge.from === currentPlayerObj?.position && filteredValidMoves.has(edge.to)) || (!isMyTurn && hoveredNodeId !== null && (edge.from === hoveredNodeId || edge.to === hoveredNodeId));
@@ -296,10 +309,10 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
                             })}
                         </svg>
                         {MAP_NODES.map((node) => (
-                            <PositionNode key={node.id} label={node.id} transports={node.transports} x={node.x} y={node.y} highlight={getNodeHighlight(node.id)} onClick={(e) => handleNodeClick(node.id, e)} onMouseEnter={() => !isMyTurn && setHoveredNodeId(node.id)} onMouseLeave={() => setHoveredNodeId(null)} />
+                            <PositionNode key={node.id} label={node.id} transports={node.transports} x={node.x} y={node.y} size={24 / scale} highlight={getNodeHighlight(node.id)} onClick={(e) => handleNodeClick(node.id, e)} onMouseEnter={() => !isMyTurn && setHoveredNodeId(node.id)} onMouseLeave={() => setHoveredNodeId(null)} />
                         ))}
                         {Object.entries(playersByPosition).map(([posId, group]) => {
-                            const node = MAP_NODES.find((n) => n.id === parseInt(posId));
+                            const node = nodesById.get(parseInt(posId));
                             if (!node) return null;
                             return <PlayerIcon key={posId} players={group} x={(node.x / 100) * imgDims.width} y={(node.y / 100) * imgDims.height} dim={(isMyTurn && !!selectedTransport) || (!isMyTurn && hoveredNodeId !== null)} />;
                         })}
