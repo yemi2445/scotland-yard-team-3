@@ -40,9 +40,7 @@ export default function PlayScreen({ navigation }: NavigationProps) {
 
     const isMyTurn = !gameOver && !!currentPlayer && currentPlayer.id === game?.currentTurn;
 
-    // currentTurnPlayer is null whenever nobody specific can be identified as "it" from this
-    // viewer's perspective (e.g. the Fugitive's client during the Detective phase, since any
-    // detective may act). Fall back to the viewer's own player so the bar/label still render.
+    // Null when nobody specific is "it" for this viewer (e.g. Fugitive during Detectives' turn) — fall back to own player.
     const activeTurnPlayer = currentTurnPlayer ?? currentPlayer ?? null;
 
     useEffect(() => {
@@ -62,10 +60,7 @@ export default function PlayScreen({ navigation }: NavigationProps) {
         }
     }, [gameOver, game?.winMessage, shownWinMessage, currentPlayer]);
 
-    // x2 has no destination of its own — playing it (at the player's current position) keeps
-    // the turn active so the next two ordinary ticket moves can be played, per the game rules.
-    // It must be submitted as its own standalone move; the server has no way to combine it with
-    // another ticket in a single request.
+    // x2 has no destination of its own — play it standalone to unlock the next two moves.
     const handleX2 = useCallback(async () => {
         if (!game || !playerId || !currentPlayer) return;
         try {

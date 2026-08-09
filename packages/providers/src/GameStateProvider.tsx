@@ -24,19 +24,13 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const poll = async () => {
             try {
                 const rawGame: any = await apiClient.getGame(game.pin);
-                // GET /games/{gameId} never includes ticket counts (only GET /players/{playerId}
-                // does), and it also always masks the fugitive's own location outside reveal
-                // rounds — even for the fugitive's own client. Fetch our own player record
-                // separately so we have real ticket counts and can fall back to our last known
-                // true position when the game endpoint reports it as hidden.
+                // /games/{id} omits ticket counts and always masks our own location — fetch our
+                // own player record too for real tickets and a position fallback.
                 const self: any = playerId ? await apiClient.getPlayer(playerId).catch(() => null) : null;
 
                 if (!cancelled) {
-                    // Nick's server only exposes a coarse "Fugitive" / "Detective" phase, not a
-                    // specific player id. For the Fugitive phase there's exactly one player who can
-                    // act, so we can resolve a single id. For the Detective phase any detective may
-                    // act, so currentTurn is resolved per-viewer: it's "you" if you're a detective,
-                    // otherwise nobody (matches how isMyTurn is checked downstream).
+                    // Server only exposes a coarse Fugitive/Detective phase, not a specific actor id.
+                    // Fugitive phase has one actor; Detective phase resolves per-viewer (you, if you're a detective).
                     const currentTurn =
                         rawGame.state === "Fugitive"
                             ? (rawGame.players ?? []).find((p: any) => p.colour?.toLowerCase() === "clear")?.playerId?.toString() ?? null
@@ -77,13 +71,11 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                         }),
                     };
                     setGame((prevGame) => {
-                        // Keep mapName from previous state since server doesdnt return it
+                        // Server doesn't return mapName — keep it from previous state.
                         const mappedWithName = {
                             ...mapped,
                             mapName: prevGame?.mapName ?? "Mini Map",
-                            // The server masks our own location outside reveal rounds (position
-                            // comes back as 0/unparseable). Fall back to the last position we
-                            // actually knew, rather than losing track of where we are.
+                            // Masked position comes back as 0 — fall back to the last known real one.
                             players: mapped.players.map((p: Player) => {
                                 if (p.position !== 0 || p.id !== playerId) return p;
                                 const prevSelf = prevGame?.players.find((pp: Player) => pp.id === playerId);

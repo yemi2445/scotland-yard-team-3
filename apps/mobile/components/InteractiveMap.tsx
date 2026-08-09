@@ -24,9 +24,7 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
     const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
     const displayPlayers = players.filter(p => !p.isSpectator && p.position !== 0);
 
-    // The map layout (image, node coordinates, connections) lives on the game server, keyed by
-    // the numeric mapId a game was created with — it must be fetched per-game, not bundled
-    // locally, since different games can use different maps.
+    // Map layout is fetched per-game from the server, keyed by mapId — not bundled locally.
     const [mapData, setMapData] = useState<any>(null);
     const [mapError, setMapError] = useState<string | null>(null);
     useEffect(() => {
@@ -47,17 +45,13 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
     const MAP_ORIGINAL_WIDTH = mapData?.mapWidth ?? 1;
     const MAP_ORIGINAL_HEIGHT = mapData?.mapHeight ?? 1;
 
-    // Node size in un-scaled map-space units. Target ~50pt on screen at the initial fit-to-screen
-    // zoom (comfortably above Apple's 44pt minimum tappable target), regardless of how large the
-    // underlying map image is — a fixed pixel size like 24 or 40 renders as a few pixels wide on
-    // a 6600px-wide map scaled down to fit a phone screen.
+    // Target ~50pt on screen at the initial fit-to-screen zoom (above Apple's 44pt min tap target).
     const fitScale = mapData ? screenWidth / MAP_ORIGINAL_WIDTH : 1;
     const nodeSize = Math.min(220, 50 / fitScale);
 
     const MAP_NODES = useMemo(() => {
         if (!mapData) return [] as { id: number; x: number; y: number; transports: TransportType[] }[];
-        // Some map datasets contain duplicate location ids — keep only the first occurrence so
-        // every node stays individually addressable and clickable.
+        // Some map datasets have duplicate location ids — keep the first occurrence only.
         const seen = new Set<number>();
         const nodes: { id: number; x: number; y: number; transports: TransportType[] }[] = [];
         for (const loc of mapData.locations) {
@@ -89,11 +83,7 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
     const translateY = useRef(new Animated.Value(0)).current;
 
     const last = useRef({ scale: 1, x: 0, y: 0, distance: 0 });
-    // The "fit to screen" scale varies hugely by map (e.g. ~0.13 for a 6600px-wide map on a
-    // ~850pt screen). Pinch/wheel zoom bounds must scale relative to this, not a fixed absolute
-    // range — a hardcoded floor like 0.4 sits way above the actual starting scale, so the very
-    // first pinch snapped straight to that floor instead of zooming progressively from where the
-    // map actually starts.
+    // Fit-to-screen scale varies a lot by map — zoom bounds are relative to this, not a fixed range.
     const fitScaleRef = useRef(1);
 
     const currentPlayerObj = useMemo(() => {
@@ -185,11 +175,7 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
     };
 
     useEffect(() => {
-        // screenWidth/screenHeight come from Dimensions.get("window"), known synchronously —
-        // no need to gate this on a layout callback (onLayout has proven unreliable here,
-        // leaving scale/translate at their Animated.Value defaults of 1/0/0, which renders a
-        // huge map at native 1:1 scale with no pan: only a sliver near its top-left corner
-        // ever falls inside the visible clipped container, i.e. an apparently blank map).
+        // screenWidth/height are known synchronously via Dimensions.get — no need to wait on a layout callback.
         if (!mapData) return;
 
         const initialScale = screenWidth / MAP_ORIGINAL_WIDTH;
@@ -305,10 +291,7 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
                 {...panResponder.panHandlers}
                 style={{
                     transform: [{ translateX }, { translateY }, { scale }],
-                    // The translateX/Y/scale values are computed assuming a top-left transform
-                    // anchor (matching the web app's mapWrapper), but the default anchor is the
-                    // element's center — without this, the scaled map ends up positioned far
-                    // outside the visible viewport instead of filling it.
+                    // Top-left transform anchor (default is center), matching the web app's mapWrapper.
                     transformOrigin: "0 0",
                     width: MAP_ORIGINAL_WIDTH,
                     height: MAP_ORIGINAL_HEIGHT,

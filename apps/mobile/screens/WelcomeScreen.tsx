@@ -51,9 +51,8 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
                 winMessage: rawGame.winner !== "None" ? `${rawGame.winner} Wins!` : null,
                 travelLog: [],
                 players: (rawGame.players ?? []).map((p: any, i: number) => {
-                    // The server masks our own (fugitive) location outside reveal rounds, even
-                    // right after we've just joined. startLocation from the join response is the
-                    // only place our true starting position is ever exposed.
+                    // Server hides the fugitive's own location outside reveal rounds — startLocation
+                    // from the join response is the only source of truth for our real position.
                     const parsedLocation = Number(p.location);
                     const isSelf = String(p.playerId) === playerId;
                     const fallback = isSelf && typeof joinResponse.startLocation === "number" ? joinResponse.startLocation : 0;
@@ -120,9 +119,8 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
             winMessage: rawGame.winner !== "None" ? `${rawGame.winner} Wins!` : null,
             travelLog: [],
             players: (rawGame.players ?? []).map((p: any, i: number) => {
-                // The server masks the fugitive's own location outside reveal rounds, even
-                // right after joining. startLocation from the join response is the only
-                // place our true starting position is ever exposed.
+                // Server hides the fugitive's own location outside reveal rounds — startLocation
+                // from the join response is the only source of truth for our real position.
                 const parsedLocation = Number(p.location);
                 const isSelf = String(p.playerId) === playerId;
                 const fallback = isSelf && typeof joinResponse.startLocation === "number" ? joinResponse.startLocation : 0;

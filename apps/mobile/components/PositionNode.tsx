@@ -33,7 +33,9 @@ export const PositionNode: React.FC<PositionNodeProps> = ({ label, transports, x
     const borderColour = highlight === "selected" ? "#ff4757" : highlight === "inspected" ? "#1e90ff" : highlight === "hovered" ? "#00aaff" : highlight === "pending" ? "#ffa502" : "rgba(255,255,255,0.8)";
 
     const nodeSize = isHighlighted ? size * 1.3 : size;
-    const fontSize = Math.max(8, nodeSize * 0.42);
+    // 3-digit labels need a smaller relative font to fit the circle.
+    const labelText = String(label);
+    const fontSize = Math.max(8, nodeSize * (labelText.length >= 3 ? 0.32 : 0.42));
 
     const makeSectorPath = (startAngle: number, endAngle: number) => {
         const r = nodeSize;
@@ -65,10 +67,18 @@ export const PositionNode: React.FC<PositionNodeProps> = ({ label, transports, x
                             backgroundColor: colours[0],
                             borderWidth: highlight === "selected" || highlight === "inspected" ? 3 : 2,
                             borderColor: borderColour,
+                            overflow: "hidden",
                         },
                     ]}
                 >
-                    <Text style={[styles.label, { fontSize }]}>{label}</Text>
+                    <Text
+                        style={[styles.label, { fontSize, width: nodeSize * 0.86 }]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.5}
+                    >
+                        {labelText}
+                    </Text>
                 </View>
             );
         }
@@ -95,7 +105,14 @@ export const PositionNode: React.FC<PositionNodeProps> = ({ label, transports, x
                         return <Path key={i} d={makeSectorPath(start, end)} fill={c} />;
                     })}
                 </Svg>
-                <Text style={[styles.label, styles.labelAbsolute, { fontSize }]}>{label}</Text>
+                <Text
+                    style={[styles.label, { fontSize, width: nodeSize * 0.86 }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.5}
+                >
+                    {labelText}
+                </Text>
             </View>
         );
     };
@@ -140,11 +157,9 @@ const styles = StyleSheet.create({
     label: {
         color: "#fff",
         fontWeight: "700",
+        textAlign: "center",
         textShadowColor: "rgba(0,0,0,0.5)",
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 2,
-    },
-    labelAbsolute: {
-        position: "absolute",
     },
 });

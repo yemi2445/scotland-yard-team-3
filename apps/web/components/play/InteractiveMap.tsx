@@ -100,9 +100,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
         if (constrained.x !== pos.x || constrained.y !== pos.y) setPos(constrained);
     }, [getMinScale, scale, pos.x, pos.y, constrainPos]);
 
-    // Track drag on window, not just the map div: if a drag ends with the cursor over another
-    // overlay (e.g. the transport bar) or outside the viewport, the div never sees mouseup and
-    // isDragging gets stuck true, making the map keep "dragging" on the next mouse movement.
+    // Track drag on window, not just the map div — a drag ending over another overlay or
+    // outside the viewport would otherwise miss mouseup and leave isDragging stuck true.
     useEffect(() => {
         if (!isDragging) return;
 
@@ -143,8 +142,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ players, current
 
     const MAP_NODES = useMemo<MapNode[]>(() => {
         if (!mapData) return [];
-        // Some map datasets (e.g. server map 567) contain duplicate location ids.
-        // Keep only the first occurrence so React keys stay unique and every node is clickable.
+        // Some map datasets have duplicate location ids — keep the first occurrence only.
         const seen = new Set<number>();
         const nodes: MapNode[] = [];
         for (const loc of mapData.locations) {
