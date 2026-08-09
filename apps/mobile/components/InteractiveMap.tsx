@@ -47,6 +47,13 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
     const MAP_ORIGINAL_WIDTH = mapData?.mapWidth ?? 1;
     const MAP_ORIGINAL_HEIGHT = mapData?.mapHeight ?? 1;
 
+    // Node size in un-scaled map-space units. Target ~50pt on screen at the initial fit-to-screen
+    // zoom (comfortably above Apple's 44pt minimum tappable target), regardless of how large the
+    // underlying map image is — a fixed pixel size like 24 or 40 renders as a few pixels wide on
+    // a 6600px-wide map scaled down to fit a phone screen.
+    const fitScale = mapData ? screenWidth / MAP_ORIGINAL_WIDTH : 1;
+    const nodeSize = Math.min(220, 50 / fitScale);
+
     const MAP_NODES = useMemo(() => {
         if (!mapData) return [] as { id: number; x: number; y: number; transports: TransportType[] }[];
         // Some map datasets contain duplicate location ids — keep only the first occurrence so
@@ -82,6 +89,12 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
     const translateY = useRef(new Animated.Value(0)).current;
 
     const last = useRef({ scale: 1, x: 0, y: 0, distance: 0 });
+    // The "fit to screen" scale varies hugely by map (e.g. ~0.13 for a 6600px-wide map on a
+    // ~850pt screen). Pinch/wheel zoom bounds must scale relative to this, not a fixed absolute
+    // range — a hardcoded floor like 0.4 sits way above the actual starting scale, so the very
+    // first pinch snapped straight to that floor instead of zooming progressively from where the
+    // map actually starts.
+    const fitScaleRef = useRef(1);
 
     const currentPlayerObj = useMemo(() => {
         if (!currentPlayerId) return null;
@@ -131,7 +144,9 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
                         last.current.scale = (scale as any)._value;
                     }
                     const scaleFactor = distance / last.current.distance;
-                    const newScale = Math.max(0.4, Math.min(3.5, last.current.scale * scaleFactor));
+                    const minScale = fitScaleRef.current * 0.5;
+                    const maxScale = fitScaleRef.current * 8;
+                    const newScale = Math.max(minScale, Math.min(maxScale, last.current.scale * scaleFactor));
                     scale.setValue(newScale);
                     return;
                 } else {
@@ -162,7 +177,9 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
     const handleWheel = (e: any) => {
         if (Platform.OS !== "web") return;
         const delta = -e.deltaY;
-        const newScale = Math.max(0.4, Math.min(3, last.current.scale + delta / 900));
+        const minScale = fitScaleRef.current * 0.5;
+        const maxScale = fitScaleRef.current * 8;
+        const newScale = Math.max(minScale, Math.min(maxScale, last.current.scale + (delta / 900) * fitScaleRef.current));
         scale.setValue(newScale);
         last.current.scale = newScale;
     };
@@ -178,6 +195,7 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
         const initialScale = screenWidth / MAP_ORIGINAL_WIDTH;
         scale.setValue(initialScale);
         last.current.scale = initialScale;
+        fitScaleRef.current = initialScale;
 
         const initialX = -45;
         const initialY = (screenHeight - MAP_ORIGINAL_HEIGHT * initialScale) / 2;
@@ -308,7 +326,7 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
                     let highlight: "selected" | "pending" | "inspected" | "hovered" | "none" = "none";
                     if (currentPlayerObj && node.id === currentPlayerObj.position) highlight = "inspected";
                     else if (isMyTurn && filteredValidMoves.has(node.id)) highlight = "pending";
-                    return <PositionNode key={node.id} label={node.id} transports={node.transports} x={node.x} y={node.y} size={40} highlight={highlight} onPress={() => handleNodePress(node.id)} />;
+                    return <PositionNode key={node.id} label={node.id} transports={node.transports} x={node.x} y={node.y} size={nodeSize} highlight={highlight} onPress={() => handleNodePress(node.id)} />;
                 })}
 
                 {/* Player icons */}
