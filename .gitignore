@@ -429,3 +429,5 @@ FodyWeavers.xsd
 .expo
 .turbo
 dist
+*.tsbuildinfo
+*.swp

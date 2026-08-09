@@ -37,10 +37,10 @@ export const apiClient = {
     // unlocks — the server has no field for combining it with another ticket in one request.
     makeMove: (playerId: any, gameId: any, ticket: any, destination: any) =>
     makeRequest(`/players/${playerId}/moves`, "POST", { gameID: gameId, ticket, destination }),
-    surrender: (playerId: any, gameId: any) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameId: gameId }),
+    surrender: (playerId: any, gameId: any) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameID: gameId }),
     // Nick's server has no dedicated leave/end-game endpoints, so both are backed by surrender —
     // the only way to remove a player's participation. "End Game (Host)" therefore only forces
     // the host's own surrender; it can't unilaterally kick every other player from the game.
-    leaveGame: (gameId: any, playerId: any) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameId: gameId }),
-    endGame: (gameId: any, playerId: any) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameId: gameId }),
+    leaveGame: (gameId: any, playerId: any) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameID: gameId }),
+    endGame: (gameId: any, playerId: any) => makeRequest(`/players/${playerId}/surrender`, "POST", { gameID: gameId }),
 }
