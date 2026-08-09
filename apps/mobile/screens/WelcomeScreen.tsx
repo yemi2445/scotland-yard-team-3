@@ -50,22 +50,30 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
                 totalRounds: rawGame.length ?? 0,
                 winMessage: rawGame.winner !== "None" ? `${rawGame.winner} Wins!` : null,
                 travelLog: [],
-                players: (rawGame.players ?? []).map((p: any, i: number) => ({
-                    id: String(p.playerId),
-                    name: p.playerName,
-                    colour: p.colour?.toLowerCase() ?? "clear",
-                    isLecturer: p.colour?.toLowerCase() === "clear",
-                    isHost: i === 0,
-                    position: typeof p.location === "number" ? p.location : 0,
-                    tickets: {
-                        yellow: typeof p.yellow === "number" ? p.yellow : 0,
-                        green: typeof p.green === "number" ? p.green : 0,
-                        red: typeof p.red === "number" ? p.red : 0,
-                        black: typeof p.black === "number" ? p.black : 0,
-                        x2: typeof p["2x"] === "number" ? p["2x"] : 0,
-                    },
-                    isSpectator: false,
-                })),
+                players: (rawGame.players ?? []).map((p: any, i: number) => {
+                    // The server masks our own (fugitive) location outside reveal rounds, even
+                    // right after we've just joined. startLocation from the join response is the
+                    // only place our true starting position is ever exposed.
+                    const parsedLocation = Number(p.location);
+                    const isSelf = String(p.playerId) === playerId;
+                    const fallback = isSelf && typeof joinResponse.startLocation === "number" ? joinResponse.startLocation : 0;
+                    return {
+                        id: String(p.playerId),
+                        name: p.playerName,
+                        colour: p.colour?.toLowerCase() ?? "clear",
+                        isLecturer: p.colour?.toLowerCase() === "clear",
+                        isHost: i === 0,
+                        position: Number.isFinite(parsedLocation) ? parsedLocation : fallback,
+                        tickets: {
+                            yellow: typeof p.yellow === "number" ? p.yellow : 0,
+                            green: typeof p.green === "number" ? p.green : 0,
+                            red: typeof p.red === "number" ? p.red : 0,
+                            black: typeof p.black === "number" ? p.black : 0,
+                            x2: typeof p["2x"] === "number" ? p["2x"] : 0,
+                        },
+                        isSpectator: false,
+                    };
+                }),
             };
 
             setPlayerId(playerId);
@@ -111,22 +119,30 @@ export default function WelcomeScreen({ navigation }: NavigationProps) {
             totalRounds: rawGame.length ?? 0,
             winMessage: rawGame.winner !== "None" ? `${rawGame.winner} Wins!` : null,
             travelLog: [],
-            players: (rawGame.players ?? []).map((p: any, i: number) => ({
-                id: String(p.playerId),
-                name: p.playerName,
-                colour: p.colour?.toLowerCase() ?? "clear",
-                isLecturer: p.colour?.toLowerCase() === "clear",
-                isHost: i === 0,
-                position: typeof p.location === "number" ? p.location : 0,
-                tickets: {
-                    yellow: typeof p.yellow === "number" ? p.yellow : 0,
-                    green: typeof p.green === "number" ? p.green : 0,
-                    red: typeof p.red === "number" ? p.red : 0,
-                    black: typeof p.black === "number" ? p.black : 0,
-                    x2: typeof p["2x"] === "number" ? p["2x"] : 0,
-                },
-                isSpectator: false,
-            })),
+            players: (rawGame.players ?? []).map((p: any, i: number) => {
+                // The server masks the fugitive's own location outside reveal rounds, even
+                // right after joining. startLocation from the join response is the only
+                // place our true starting position is ever exposed.
+                const parsedLocation = Number(p.location);
+                const isSelf = String(p.playerId) === playerId;
+                const fallback = isSelf && typeof joinResponse.startLocation === "number" ? joinResponse.startLocation : 0;
+                return {
+                    id: String(p.playerId),
+                    name: p.playerName,
+                    colour: p.colour?.toLowerCase() ?? "clear",
+                    isLecturer: p.colour?.toLowerCase() === "clear",
+                    isHost: i === 0,
+                    position: Number.isFinite(parsedLocation) ? parsedLocation : fallback,
+                    tickets: {
+                        yellow: typeof p.yellow === "number" ? p.yellow : 0,
+                        green: typeof p.green === "number" ? p.green : 0,
+                        red: typeof p.red === "number" ? p.red : 0,
+                        black: typeof p.black === "number" ? p.black : 0,
+                        x2: typeof p["2x"] === "number" ? p["2x"] : 0,
+                    },
+                    isSpectator: false,
+                };
+            }),
         };
         setPlayerId(playerId);
         setGame(game);
