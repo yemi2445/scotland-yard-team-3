@@ -77,8 +77,6 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
         }));
     }, [mapData]);
 
-    const [layoutReady, setLayoutReady] = useState(false);
-
     const scale = useRef(new Animated.Value(1)).current;
     const translateX = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(0)).current;
@@ -170,7 +168,12 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
     };
 
     useEffect(() => {
-        if (!layoutReady || !mapData) return;
+        // screenWidth/screenHeight come from Dimensions.get("window"), known synchronously —
+        // no need to gate this on a layout callback (onLayout has proven unreliable here,
+        // leaving scale/translate at their Animated.Value defaults of 1/0/0, which renders a
+        // huge map at native 1:1 scale with no pan: only a sliver near its top-left corner
+        // ever falls inside the visible clipped container, i.e. an apparently blank map).
+        if (!mapData) return;
 
         const initialScale = screenWidth / MAP_ORIGINAL_WIDTH;
         scale.setValue(initialScale);
@@ -184,7 +187,7 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
 
         last.current.x = initialX;
         last.current.y = initialY;
-    }, [layoutReady, mapData]);
+    }, [mapData, screenWidth, screenHeight]);
 
     const handleNodePress = useCallback((nodeId: number) => {
             if (!isMyTurn || !onMove) return;
@@ -270,7 +273,7 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
 
     if (!mapData) {
         return (
-            <View style={styles.container} onLayout={() => setLayoutReady(true)}>
+            <View style={styles.container}>
                 <View style={styles.statusWrap}>
                     <Text style={styles.statusText}>{mapError ? `Map failed to load:\n${mapError}` : "Loading map…"}</Text>
                 </View>
@@ -279,11 +282,16 @@ export default function InteractiveMap({ players = [], currentRound = 1, isLectu
     }
 
     return (
-        <View style={styles.container} onLayout={() => setLayoutReady(true)} {...(Platform.OS === "web" ? { onWheel: handleWheel as any } : {})}>
+        <View style={styles.container} {...(Platform.OS === "web" ? { onWheel: handleWheel as any } : {})}>
             <Animated.View
                 {...panResponder.panHandlers}
                 style={{
                     transform: [{ translateX }, { translateY }, { scale }],
+                    // The translateX/Y/scale values are computed assuming a top-left transform
+                    // anchor (matching the web app's mapWrapper), but the default anchor is the
+                    // element's center — without this, the scaled map ends up positioned far
+                    // outside the visible viewport instead of filling it.
+                    transformOrigin: "0 0",
                     width: MAP_ORIGINAL_WIDTH,
                     height: MAP_ORIGINAL_HEIGHT,
                 }}
